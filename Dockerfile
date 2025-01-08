@@ -8,7 +8,17 @@ WORKDIR /app
 COPY package.json ./
 
 # Install dependencies
-RUN npm install
+
+RUN npm install -upgrade
+
+
+RUN npm install node-fetch
+
+RUN npm install node-polyfill-webpack-plugin
+
+RUN npm install path-browserify stream-browserify url util browserify-zlib
+
+
 
 # Copy the rest of the application code (including your React app)
 COPY . .

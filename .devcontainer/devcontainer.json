@@ -7,12 +7,7 @@
     "terminal.integrated.shell.linux": "/bin/bash",
     "editor.formatOnSave": true
   },
-  "extensions": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode"
-  ],
-  "forwardPorts": [
-    3000
-  ], // Port 3000 (or any other) to access the React app
+  "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"],
+  "forwardPorts": [3000], // Port 3000 (or any other) to access the React app
   "remoteUser": "node"
 }
