@@ -124,9 +124,9 @@ function Dashboard() {
               <MDBox mb={3}>
                 <ReportsLineChart
                   color="dark"
-                  title="completed tasks"
-                  description="Last Campaign Performance"
-                  date="just updated"
+                  title="ProcessChamberGas"
+                  description="Sensor data over time"
+                  date="datetime"
                   chart={tasks}
                 />
               </MDBox>

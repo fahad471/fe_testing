@@ -59,7 +59,7 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "images",
+    name: "Images",
     key: "tables",
     icon: <Icon fontSize="small">table_view</Icon>,
     route: "/tables",
@@ -97,14 +97,14 @@ const routes = [
   //   route: "/profile",
   //   component: <Profile />,
   // },
-  // {
-  //   type: "collapse",
-  //   name: "Sign In",
-  //   key: "sign-in",
-  //   icon: <Icon fontSize="small">login</Icon>,
-  //   route: "/authentication/sign-in",
-  //   component: <SignIn />,
-  // },
+  {
+    type: "collapse",
+    name: "Sign In",
+    key: "sign-in",
+    icon: <Icon fontSize="small">login</Icon>,
+    route: "/authentication/sign-in",
+    component: <SignIn />,
+  },
   // {
   //   type: "collapse",
   //   name: "Sign Up",
