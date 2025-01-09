@@ -1,104 +1,50 @@
-/**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
+const Dashboard = () => {
+  const [imagesData, setImagesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-Coded by www.creative-tim.com
+  useEffect(() => {
+    // Fetch the image data from the backend using axios
+    const fetchImageData = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8000/api/image_data/maria/images/?production_id=eff67ab2-0ff0-4e05-a86d-28fb8a870578&slice_number=55"
+        ); // Replace with the correct API endpoint
+        setImagesData(response.data); // Set the fetched image data into state
+      } catch (err) {
+        setError("Error fetching image data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
- =========================================================
+    fetchImageData();
+  }, []);
 
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
-// @mui material components
-import Grid from "@mui/material/Grid";
-import Card from "@mui/material/Card";
-
-// Material Dashboard 2 React components
-import MDBox from "components/MDBox";
-import MDTypography from "components/MDTypography";
-
-// Material Dashboard 2 React example components
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import Footer from "examples/Footer";
-import DataTable from "examples/Tables/DataTable";
-
-// Data
-import authorsTableData from "layouts/tables/data/authorsTableData";
-import projectsTableData from "layouts/tables/data/projectsTableData";
-
-function Tables() {
-  const { columns, rows } = authorsTableData();
-  const { columns: pColumns, rows: pRows } = projectsTableData();
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
-    <DashboardLayout>
-      <DashboardNavbar />
-      <MDBox pt={6} pb={3}>
-        <Grid container spacing={6}>
-          <Grid item xs={12}>
-            <Card>
-              <MDBox
-                mx={2}
-                mt={-3}
-                py={3}
-                px={2}
-                variant="gradient"
-                bgColor="info"
-                borderRadius="lg"
-                coloredShadow="info"
-              >
-                <MDTypography variant="h6" color="white">
-                  Authors Table
-                </MDTypography>
-              </MDBox>
-              <MDBox pt={3}>
-                <DataTable
-                  table={{ columns, rows }}
-                  isSorted={false}
-                  entriesPerPage={false}
-                  showTotalEntries={false}
-                  noEndBorder
-                />
-              </MDBox>
-            </Card>
-          </Grid>
-          <Grid item xs={12}>
-            <Card>
-              <MDBox
-                mx={2}
-                mt={-3}
-                py={3}
-                px={2}
-                variant="gradient"
-                bgColor="info"
-                borderRadius="lg"
-                coloredShadow="info"
-              >
-                <MDTypography variant="h6" color="white">
-                  Projects Table
-                </MDTypography>
-              </MDBox>
-              <MDBox pt={3}>
-                <DataTable
-                  table={{ columns: pColumns, rows: pRows }}
-                  isSorted={false}
-                  entriesPerPage={false}
-                  showTotalEntries={false}
-                  noEndBorder
-                />
-              </MDBox>
-            </Card>
-          </Grid>
-        </Grid>
-      </MDBox>
-      <Footer />
-    </DashboardLayout>
+    <div>
+      <h1>Image Dashboard</h1>
+      <div className="image-gallery">
+        {imagesData.map((image) => (
+          <div key={image.id} className="image-item">
+            <h3>{image.position}</h3>
+            <img
+              src={`images/${image.image}`} // Constructing image URL
+              alt={`Position: ${image.position}`}
+              style={{ width: "200px", height: "200px" }} // Add styles as needed
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
-}
+};
 
-export default Tables;
+export default Dashboard;

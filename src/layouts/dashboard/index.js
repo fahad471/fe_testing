@@ -14,6 +14,8 @@ Coded by www.creative-tim.com
 */
 
 // @mui material components
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import Grid from "@mui/material/Grid";
 
 // Material Dashboard 2 React components
@@ -21,88 +23,75 @@ import MDBox from "components/MDBox";
 
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DefaultLineChart from "examples/Charts/LineCharts/DefaultLineChart";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
+
+// Import missing components
 import ReportsBarChart from "examples/Charts/BarCharts/ReportsBarChart";
 import ReportsLineChart from "examples/Charts/LineCharts/ReportsLineChart";
-import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
 
 // Data
 import reportsBarChartData from "layouts/dashboard/data/reportsBarChartData";
 import reportsLineChartData from "layouts/dashboard/data/reportsLineChartData";
 
-// Dashboard components
-import Projects from "layouts/dashboard/components/Projects";
-import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
-
 function Dashboard() {
   const { sales, tasks } = reportsLineChartData;
+
+  const [sensorChartData, setSensorChartData] = useState(null);
+  let [productionIds, setProductionId] = useState("eff67ab2-0ff0-4e05-a86d-28fb8a870578");
+
+  useEffect(() => {
+    // Fetch productionid first
+    const production_id_url = "http://localhost:8000/api/sensor_data/influx/latest_status";
+
+    axios
+      .get(production_id_url)
+      .then((response) => {
+        productionIds = response.data.ProductionID;
+        console.log("productionid", productionIds);
+        setProductionId(productionIds);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    // Fetch sensor data only when productionid is available
+    if (productionIds && productionIds.length > 0) {
+      const API_URL =
+        "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor_slice?production_id=" +
+        productionIds +
+        "&field=ProcessChamberOxygenConcentration";
+
+      axios
+        .get(API_URL)
+        .then((response) => {
+          const timeLabels = response.data.map((item) => item.slice);
+          const values = response.data.map((item) => item._value);
+
+          setSensorChartData({
+            labels: timeLabels,
+            datasets: [
+              {
+                label: "Oxygen Concentration",
+                color: "info", // Color of the line
+                data: values,
+              },
+            ],
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    }
+  }, [productionIds]);
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
       <MDBox py={3}>
-        {/* <Grid container spacing={3}>
-          <Grid item xs={12} md={6} lg={3}>
-            <MDBox mb={1.5}>
-              <ComplexStatisticsCard
-                color="dark"
-                icon="weekend"
-                title="Bookings"
-                count={281}
-                percentage={{
-                  color: "success",
-                  amount: "+55%",
-                  label: "than lask week",
-                }}
-              />
-            </MDBox>
-          </Grid>
-          <Grid item xs={12} md={6} lg={3}>
-            <MDBox mb={1.5}>
-              <ComplexStatisticsCard
-                icon="leaderboard"
-                title="Today's Users"
-                count="2,300"
-                percentage={{
-                  color: "success",
-                  amount: "+3%",
-                  label: "than last month",
-                }}
-              />
-            </MDBox>
-          </Grid>
-          <Grid item xs={12} md={6} lg={3}>
-            <MDBox mb={1.5}>
-              <ComplexStatisticsCard
-                color="success"
-                icon="store"
-                title="Revenue"
-                count="34k"
-                percentage={{
-                  color: "success",
-                  amount: "+1%",
-                  label: "than yesterday",
-                }}
-              />
-            </MDBox>
-          </Grid>
-          <Grid item xs={12} md={6} lg={3}>
-            <MDBox mb={1.5}>
-              <ComplexStatisticsCard
-                color="primary"
-                icon="person_add"
-                title="Followers"
-                count="+91"
-                percentage={{
-                  color: "success",
-                  amount: "",
-                  label: "Just updated",
-                }}
-              />
-            </MDBox>
-          </Grid>
-        </Grid> */}
         <MDBox mt={4.5}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6} lg={4}>
@@ -123,7 +112,7 @@ function Dashboard() {
                   title="daily sales"
                   description={
                     <>
-                      (<strong>+15%</strong>) increase in today sales.
+                      <strong>+15%</strong> increase in today&apos;s sales.
                     </>
                   }
                   date="updated 4 min ago"
@@ -142,20 +131,23 @@ function Dashboard() {
                 />
               </MDBox>
             </Grid>
+            <Grid item xs={20} md={8} lg={14}>
+              <MDBox mb={8}>
+                {/* DefaultLineChart to visualize sensor data */}
+                {sensorChartData && (
+                  <DefaultLineChart
+                    icon={{ color: "light", component: "leaderboard" }}
+                    title="sensor"
+                    height="80rem"
+                    description="Sensor data over time"
+                    chart={sensorChartData}
+                  />
+                )}
+              </MDBox>
+            </Grid>
           </Grid>
         </MDBox>
-        <MDBox>
-          {/* <Grid container spacing={3}>
-            <Grid item xs={12} md={6} lg={8}>
-              <Projects />
-            </Grid>
-            <Grid item xs={12} md={6} lg={4}>
-              <OrdersOverview />
-            </Grid>
-          </Grid> */}
-        </MDBox>
       </MDBox>
-      {/* <Footer /> */}
     </DashboardLayout>
   );
 }

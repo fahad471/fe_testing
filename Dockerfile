@@ -18,6 +18,8 @@ RUN npm install node-polyfill-webpack-plugin
 
 RUN npm install path-browserify stream-browserify url util browserify-zlib
 
+RUN npm install axios
+
 
 
 # Copy the rest of the application code (including your React app)
