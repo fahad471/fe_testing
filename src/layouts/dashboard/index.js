@@ -39,52 +39,96 @@ function Dashboard() {
   const { sales, tasks } = reportsLineChartData;
 
   const [sensorChartData, setSensorChartData] = useState(null);
+  const [sensorChamberGas, setSensorChamberGas] = useState(null);
+
+  const [sensorEnvironmentHumidity, setSensorEnvironmentHumidity] = useState(null);
+  const [sensorRecoaterStatus, setSensorRecoaterStatus] = useState(null);
+  const [sensorSliceUsedPowderVolume, setSensorSliceUsedPowderVolume] = useState(null);
+  const [sensorSliceCoatingDuration, setSensorSliceCoatingDuration] = useState(null);
+
+  const [lastUpdateTime, setLastUpdateTime] = useState(null); // Track the last update time
+
   let [productionIds, setProductionId] = useState("eff67ab2-0ff0-4e05-a86d-28fb8a870578");
 
   useEffect(() => {
     // Fetch productionid first
     const production_id_url = "http://localhost:8000/api/sensor_data/influx/latest_status";
 
-    axios
-      .get(production_id_url)
-      .then((response) => {
-        productionIds = response.data.ProductionID;
-        console.log("productionid", productionIds);
-        setProductionId(productionIds);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
+    const fetchProductionId = () => {
+      axios
+        .get(production_id_url)
+        .then((response) => {
+          productionIds = response.data.ProductionID;
+          console.log("productionid", productionIds);
+          setProductionId(productionIds);
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    };
+
+    // Initial fetch
+    fetchProductionId();
+
+    // Set interval to fetch every 2 minutes (120000 ms)
+    const intervalId = setInterval(fetchProductionId, 120000);
+
+    // Clear interval on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
     // Fetch sensor data only when productionid is available
     if (productionIds && productionIds.length > 0) {
-      const API_URL =
-        "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor_slice?production_id=" +
-        productionIds +
-        "&field=ProcessChamberOxygenConcentration";
+      const fetchData = (field, setter) => {
+        const API_URL =
+          "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor_slice?production_id=" +
+          productionIds +
+          "&field=" +
+          field;
 
-      axios
-        .get(API_URL)
-        .then((response) => {
-          const timeLabels = response.data.map((item) => item.slice);
-          const values = response.data.map((item) => item._value);
+        axios
+          .get(API_URL)
+          .then((response) => {
+            const timeLabels = response.data.map((item) => item.slice);
+            const values = response.data.map((item) => item._value);
 
-          setSensorChartData({
-            labels: timeLabels,
-            datasets: [
-              {
-                label: "Oxygen Concentration",
-                color: "info", // Color of the line
-                data: values,
-              },
-            ],
+            setter({
+              labels: timeLabels,
+              datasets: [
+                {
+                  label: field,
+                  color: "success", // Default color, adjust dynamically if needed
+                  data: values,
+                },
+              ],
+            });
+            setLastUpdateTime(new Date().toLocaleString());
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
           });
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-        });
+      };
+
+      fetchData("ProcessChamberOxygenConcentration", setSensorChartData);
+      fetchData("ShieldingGasConsumption", setSensorChamberGas);
+      fetchData("EnvironmentHumidity", setSensorEnvironmentHumidity);
+      fetchData("RecoaterStatus", setSensorRecoaterStatus);
+      fetchData("SliceUsedPowderVolume", setSensorSliceUsedPowderVolume);
+      fetchData("SliceCoatingDuration", setSensorSliceCoatingDuration);
+
+      // Fetch all sensor data on mount and every 2 minutes
+      const intervalId = setInterval(() => {
+        fetchData("ProcessChamberOxygenConcentration", setSensorChartData);
+        fetchData("ShieldingGasConsumption", setSensorChamberGas);
+        fetchData("EnvironmentHumidity", setSensorEnvironmentHumidity);
+        fetchData("RecoaterStatus", setSensorRecoaterStatus);
+        fetchData("SliceUsedPowderVolume", setSensorSliceUsedPowderVolume);
+        fetchData("SliceCoatingDuration", setSensorSliceCoatingDuration);
+      }, 120000);
+
+      // Cleanup interval on unmount
+      return () => clearInterval(intervalId);
     }
   }, [productionIds]);
 
@@ -94,7 +138,7 @@ function Dashboard() {
       <MDBox py={3}>
         <MDBox mt={4.5}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6} lg={4}>
+            {/* <Grid item xs={12} md={6} lg={4}>
               <MDBox mb={3}>
                 <ReportsBarChart
                   color="info"
@@ -130,17 +174,102 @@ function Dashboard() {
                   chart={tasks}
                 />
               </MDBox>
+            </Grid> */}
+
+            <Grid item xs={12}>
+              {/* Display the last update time */}
+              {lastUpdateTime && (
+                <MDBox mb={3}>
+                  <p>
+                    <strong>Last Update: </strong>
+                    {lastUpdateTime}
+                  </p>
+                </MDBox>
+              )}
             </Grid>
-            <Grid item xs={20} md={8} lg={14}>
+
+            <Grid item xs={8} md={8} lg={6}>
               <MDBox mb={8}>
                 {/* DefaultLineChart to visualize sensor data */}
                 {sensorChartData && (
                   <DefaultLineChart
-                    icon={{ color: "light", component: "leaderboard" }}
-                    title="sensor"
-                    height="80rem"
+                    icon={{ color: "success", component: "leaderboard" }}
+                    title="Oxygen Concentration"
+                    height="20rem"
                     description="Sensor data over time"
                     chart={sensorChartData}
+                  />
+                )}
+              </MDBox>
+            </Grid>
+            <Grid item xs={8} md={8} lg={6}>
+              <MDBox mb={8}>
+                {/* DefaultLineChart to visualize sensor data */}
+                {sensorChamberGas && (
+                  <DefaultLineChart
+                    icon={{ color: "success", component: "leaderboard" }}
+                    title="Shielding Gas Consumption"
+                    height="20rem"
+                    description="Sensor data over time"
+                    chart={sensorChamberGas}
+                  />
+                )}
+              </MDBox>
+            </Grid>
+
+            <Grid item xs={8} md={8} lg={6}>
+              <MDBox mb={8}>
+                {/* DefaultLineChart to visualize sensor data */}
+                {sensorEnvironmentHumidity && (
+                  <DefaultLineChart
+                    icon={{ color: "success", component: "leaderboard" }}
+                    title="Environment Humidity"
+                    height="20rem"
+                    description="Sensor data over time"
+                    chart={sensorEnvironmentHumidity}
+                  />
+                )}
+              </MDBox>
+            </Grid>
+            <Grid item xs={8} md={8} lg={6}>
+              <MDBox mb={8}>
+                {/* DefaultLineChart to visualize sensor data */}
+                {sensorRecoaterStatus && (
+                  <DefaultLineChart
+                    icon={{ color: "light", component: "leaderboard" }}
+                    title="Recoater Status"
+                    height="20rem"
+                    description="Sensor data over time"
+                    chart={sensorRecoaterStatus}
+                  />
+                )}
+              </MDBox>
+            </Grid>
+
+            <Grid item xs={8} md={8} lg={6}>
+              <MDBox mb={8}>
+                {/* DefaultLineChart to visualize sensor data */}
+                {sensorSliceUsedPowderVolume && (
+                  <DefaultLineChart
+                    icon={{ color: "success", component: "leaderboard" }}
+                    title="Powder Volume used per Slice"
+                    height="20rem"
+                    description="Sensor data over time"
+                    chart={sensorSliceUsedPowderVolume}
+                  />
+                )}
+              </MDBox>
+            </Grid>
+            <Grid item xs={8} md={8} lg={6}>
+              <MDBox mb={8}>
+                {/* DefaultLineChart to visualize sensor data */}
+                {sensorSliceCoatingDuration && (
+                  <DefaultLineChart
+                    icon={{ color: "success", component: "leaderboard" }}
+                    title="Slice Coating Duration"
+                    height="20rem"
+                    description="Sensor data over time"
+                    chart={sensorSliceCoatingDuration}
                   />
                 )}
               </MDBox>

@@ -147,7 +147,7 @@ const Dashboard = () => {
             <img
               src={`http://localhost:8000/${image.image}`} // Corrected image URL
               alt={`Position: ${image.position}`} // Corrected alt text
-              style={{ width: "80%", height: "auto", cursor: "pointer" }}
+              style={{ width: "100%", height: "auto", cursor: "pointer" }}
               onClick={() => openImageModal(image)}
               onLoad={(e) => handleImageLoad(image.id, e)} // Pass the event and image ID
             />
@@ -191,8 +191,8 @@ const Dashboard = () => {
                   const scaleY = imageDimension.height / 640;
 
                   // Apply the rescaling to bounding box coordinates
-                  const boxLeft = (centerX - width / 2) * scaleX;
-                  const boxTop = (centerY - height / 2) * scaleY;
+                  const boxLeft = centerX * scaleX;
+                  const boxTop = centerY * scaleY;
                   const boxWidth = width * scaleX;
                   const boxHeight = height * scaleY;
 
