@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Modal, Box, IconButton, Checkbox, FormControlLabel } from "@mui/material";
+import {
+  Modal,
+  Box,
+  IconButton,
+  Checkbox,
+  FormControlLabel,
+  TextField,
+  Button,
+} from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 
 const Dashboard = () => {
@@ -10,26 +18,33 @@ const Dashboard = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [detectDefects, setDetectDefects] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({});
+  const [sliceNumber, setSliceNumber] = useState("1028"); // Default slice number
+  const [inputSliceNumber, setInputSliceNumber] = useState(sliceNumber); // Temporary state for slice number input
+  const [previousSliceNumber, setPreviousSliceNumber] = useState(null); // for tracking previous slice number
 
+  // Function to fetch image data based on the slice number
+  const fetchImageData = async (sliceNumber) => {
+    setLoading(true); // Show the loading state
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/api/image_data/maria/images/?production_id=f77c322a-1f91-4d9c-91f9-eb1c18163e31&slice_number=${sliceNumber}`
+      );
+      setImagesData(response.data); // Update the images data with the new images fetched from the backend
+      setError(null); // Reset the error state if the fetch was successful
+    } catch (err) {
+      setError("Error fetching image data");
+      console.error(err);
+    } finally {
+      setLoading(false); // Hide loading state after the request completes
+    }
+  };
+
+  // Initial fetch when the component is mounted with the default slice number
   useEffect(() => {
-    // Fetch the image data from the backend using axios
-    const fetchImageData = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:8000/api/image_data/maria/images/?production_id=f77c322a-1f91-4d9c-91f9-eb1c18163e31&slice_number=1028"
-        ); // Replace with the correct API endpoint
-        setImagesData(response.data); // Set the fetched image data into state
-      } catch (err) {
-        setError("Error fetching image data");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchImageData(sliceNumber); // Fetch images when the component mounts or sliceNumber changes
+  }, [sliceNumber]); // Dependency on sliceNumber ensures it fetches when sliceNumber changes
 
-    fetchImageData();
-  }, []);
-
+  // Function to handle the defect detection logic (can be enhanced)
   const fetchDefectData = async () => {
     try {
       const response = await axios.post(
@@ -37,28 +52,16 @@ const Dashboard = () => {
         null, // No body required
         { params: { detect_defects: detectDefects } } // Include detect_defects parameter
       );
-      console.log("Defect Data Response:", response.data); // Debugging log for defect data response
 
+      // Map defect data to the imagesData array
       const updatedImages = imagesData.map((image) => {
-        // Normalize the image path from imagesData
         const normalizedImagePath = `http://localhost:8000/${image.image}`;
-
-        // Get just the file name from the path (ignore directory structure)
         const imageFileName = normalizedImagePath.split("/").pop();
-
-        // Find defect data for the image by comparing the file name
         const defectData = response.data.find((defect) => {
-          // Normalize defect path by extracting just the file name
-          const defectFileName = defect.image_path.split("\\").pop(); // Use "\\" to split the Windows path correctly
-
-          console.log("Comparing Image File:", imageFileName); // Debugging log to check file names
-          console.log("With Defect File:", defectFileName); // Debugging log to check file names
-
-          return defectFileName === imageFileName; // Compare file names only
+          const defectFileName = defect.image_path.split("\\").pop();
+          return defectFileName === imageFileName;
         });
 
-        console.log("Defect Data for Image:", defectData); // Debugging log for each image's defect data
-        // Set detections to empty array if no defects are found
         return { ...image, detections: defectData ? defectData.detections : [] };
       });
 
@@ -72,7 +75,7 @@ const Dashboard = () => {
     if (detectDefects) {
       fetchDefectData(); // Trigger defect detection when checkbox is checked
     }
-  }, [detectDefects]); // Run whenever detectDefects state changes
+  }, [detectDefects]);
 
   const openImageModal = (image) => {
     setSelectedImage(image);
@@ -92,6 +95,25 @@ const Dashboard = () => {
       ...prev,
       [imageId]: { width: naturalWidth, height: naturalHeight },
     }));
+  };
+
+  // Handle input change for slice number field
+  const handleSliceNumberInputChange = (event) => {
+    setInputSliceNumber(event.target.value); // Update temporary input state
+  };
+
+  // Button click to fetch images based on input slice number
+  const handleFetchData = () => {
+    if (inputSliceNumber !== previousSliceNumber) {
+      // If the slice number has changed, reset detectDefects to false
+      setDetectDefects(false);
+
+      // Fetch images with the new slice number
+      fetchImageData(inputSliceNumber); // This should be fetchImageData, not fetchImages
+
+      // Update previous slice number
+      setPreviousSliceNumber(inputSliceNumber);
+    }
   };
 
   if (loading) {
@@ -121,6 +143,20 @@ const Dashboard = () => {
     <div style={{ paddingLeft: "300px" }}>
       <h1>Image Dashboard</h1>
       <div>
+        {/* Text input for slice number */}
+        <TextField
+          label="Slice Number"
+          variant="outlined"
+          value={inputSliceNumber} // Use the temporary state for the input field
+          onChange={handleSliceNumberInputChange} // Update temporary state on input change
+          style={{ marginBottom: "20px", marginRight: "10px" }}
+        />
+        <Button variant="contained" color="white" onClick={handleFetchData}>
+          Fetch Images
+        </Button>
+      </div>
+
+      <div>
         {/* Checkbox to toggle defect detection */}
         <FormControlLabel
           control={
@@ -133,86 +169,111 @@ const Dashboard = () => {
           label="Enable Defect Detection"
         />
       </div>
+
       <div
         className="image-gallery"
         style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}
       >
         {imagesData.map((image) => (
-          <div
-            key={image.id}
-            className="image-item"
-            style={{ textAlign: "center", position: "relative" }}
-          >
+          <div className="Image Position" style={{ textAlign: "center" }} key={image.id}>
             <h3>{image.position}</h3>
-            <img
-              src={`http://localhost:8000/${image.image}`} // Corrected image URL
-              alt={`Position: ${image.position}`} // Corrected alt text
-              style={{ width: "100%", height: "auto", cursor: "pointer" }}
-              onClick={() => openImageModal(image)}
-              onLoad={(e) => handleImageLoad(image.id, e)} // Pass the event and image ID
-            />
+            <div className="image-item" style={{ textAlign: "center", position: "relative" }}>
+              <img
+                src={`http://localhost:8000/${image.image}`} // Corrected image URL
+                alt={`Position: ${image.position}`} // Corrected alt text
+                style={{ width: "100%", height: "auto", cursor: "pointer" }}
+                onClick={() => openImageModal(image)}
+                onLoad={(e) => handleImageLoad(image.id, e)} // Pass the event and image ID
+              />
 
-            {/* Render "No defects detected" message if defect detection is enabled and no detections */}
-            {detectDefects && image.detections && image.detections.length === 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  color: "red",
-                  fontWeight: "bold",
-                  fontSize: "20px",
-                }}
-              >
-                No defects detected
-              </div>
-            )}
+              {detectDefects && image.detections && image.detections.length === 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    color: "red",
+                    fontWeight: "bold",
+                    fontSize: "20px",
+                  }}
+                >
+                  No defects detected
+                </div>
+              )}
 
-            {/* Render bounding boxes if defect detection is enabled and there are detections */}
-            {image.detections && image.detections.length > 0 && detectDefects && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                {image.detections.map((detection, idx) => {
-                  const { box } = detection;
-                  const [centerX, centerY, width, height] = box;
+              {image.detections && image.detections.length > 0 && detectDefects && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
+                  {image.detections.map((detection, idx) => {
+                    const { box, label } = detection; // Assuming each detection contains 'box' and 'label'
+                    const [centerX, centerY, width, height] = box;
 
-                  const imageDimension = imageDimensions[image.id] || { width: 1, height: 1 }; // Default to 1 to avoid divide by 0
+                    const imageDimension = imageDimensions[image.id] || { width: 1, height: 1 };
+                    const scaleX = imageDimension.width / 640; // Assuming 640 is the base image size for scaling
+                    const scaleY = imageDimension.height / 640;
 
-                  // Rescale the bounding box values based on the actual image dimensions
-                  const scaleX = imageDimension.width / 640; // Scale factor for width
-                  const scaleY = imageDimension.height / 640;
+                    const boxLeft = centerX * scaleX;
+                    const boxTop = centerY * scaleY;
+                    const boxWidth = width * scaleX * 1.1;
+                    const boxHeight = height * scaleY * 1.1;
 
-                  // Apply the rescaling to bounding box coordinates
-                  const boxLeft = centerX * scaleX;
-                  const boxTop = centerY * scaleY;
-                  const boxWidth = width * scaleX;
-                  const boxHeight = height * scaleY;
+                    const new_boxleft = ((boxLeft - boxWidth / 1.3) / imageDimension.width) * 100;
+                    const new_boxtop = ((boxTop - boxHeight / 1.3) / imageDimension.height) * 100;
 
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        position: "absolute",
-                        left: `${boxLeft}px`,
-                        top: `${boxTop}px`,
-                        width: `${boxWidth}px`,
-                        height: `${boxHeight}px`,
-                        border: "2px solid red",
-                        boxSizing: "border-box",
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            )}
+                    // Mapping numeric label IDs to descriptive defect names
+                    const defectLabels = {
+                      0: "Grooves_defect",
+                      1: "Protruding_defect",
+                      2: "Recoating_defect",
+                    };
+
+                    // Get the defect label by the detection labelId
+                    const defectLabel = defectLabels[label] || "Unknown Defect"; // Default to "Unknown Defect" if the ID doesn't match
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          position: "absolute",
+                          left: `${new_boxleft}%`,
+                          top: `${new_boxtop}%`,
+                          width: `${boxWidth}px`,
+                          height: `${boxHeight}px`,
+                          border: "2px solid red",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        {/* Label for the bounding box */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "-25px", // Adjust as needed
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            color: "red",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            backgroundColor: "white",
+                            padding: "2px 5px",
+                            borderRadius: "5px",
+                          }}
+                        >
+                          {defectLabel} {/* Label text */}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
