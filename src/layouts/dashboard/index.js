@@ -18,7 +18,7 @@ function Dashboard() {
   const [sensorSliceUsedPowderVolume, setSensorSliceUsedPowderVolume] = useState(null);
   const [sensorSliceCoatingDuration, setSensorSliceCoatingDuration] = useState(null);
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
-  const [route_influx, setRouteInflux] = useState("_time");
+  const [route_influx, setRouteInflux] = useState("_slice");
   const [productionIds, setProductionId] = useState(""); // Initially empty production ID
   const [inputProductionId, setInputProductionId] = useState(""); // State to manage input value
 
@@ -87,6 +87,7 @@ function Dashboard() {
   const handleInputChange = (event) => {
     setInputProductionId(event.target.value); // Update input state
   };
+
   // Toggle the route_influx state when the switch is toggled
   const handleSwitchToggle = (event) => {
     setRouteInflux(event.target.checked ? "_time" : "_slice");
@@ -97,6 +98,7 @@ function Dashboard() {
     fetchData("SliceUsedPowderVolume", setSensorSliceUsedPowderVolume);
     fetchData("SliceCoatingDuration", setSensorSliceCoatingDuration);
   };
+
   // Handle fetch on button click
   const handleFetchData = () => {
     if (!inputProductionId) return; // If input is empty, do nothing
@@ -121,52 +123,77 @@ function Dashboard() {
       <DashboardNavbar />
       <MDBox py={3}>
         <MDBox mt={4.5}>
-          <Grid container spacing={3}>
+          <Grid container spacing={1}>
             {/* Input field for production ID */}
             <Grid item xs={12}>
-              <MDBox mb={3}>
-                <TextField
-                  label="Enter Production ID"
-                  variant="outlined"
-                  value={inputProductionId} // Bind to state
-                  onChange={handleInputChange} // Handle input changes
-                  fullWidth
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleFetchData}
-                  style={{ marginTop: "16px" }}
-                >
-                  Fetch Data
-                </Button>
+              <MDBox mb={6}>
+                <Grid container spacing={1}>
+                  {/* Left side: Input field, Button, Toggle, and Last Update */}
+                  <Grid item xs={8} md={8} lg={6}>
+                    <div style={{ marginTop: "40px" }}>
+                      <TextField
+                        label="Enter Production ID"
+                        variant="outlined"
+                        value={inputProductionId} // Bind to state
+                        onChange={handleInputChange} // Handle input changes
+                        style={{
+                          marginBottom: "30px",
+                          marginRight: "20px",
+                          width: "300px",
+                          fontSize: "16px",
+                        }}
+                      />
+                      <Button
+                        variant="contained"
+                        color="white"
+                        onClick={handleFetchData}
+                        style={{ marginTop: "0px" }}
+                      >
+                        Fetch Data
+                      </Button>
+                    </div>
+
+                    <div style={{ marginLeft: "0px", marginTop: "30%" }}>
+                      {/* Add Switch to toggle between "Opt_sensor_slice" and "Opt_sensor_time" */}
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={route_influx === "_time"}
+                          onChange={handleSwitchToggle}
+                        />{" "}
+                        Toggle Data Type
+                      </label>
+                    </div>
+
+                    {/* Display last update time */}
+                    {lastUpdateTime && (
+                      <MDBox mb={3}>
+                        <p>
+                          <strong>Last Update: </strong>
+                          {lastUpdateTime}
+                        </p>
+                      </MDBox>
+                    )}
+                  </Grid>
+
+                  {/* Right side: Indoor Camera */}
+                  <Grid item xs={12} md={4} textAlign="right">
+                    <MDBox mb={8}>
+                      <h3>Indoor Camera</h3>
+                      <img
+                        src="http://141.60.140.120:23600/S0711Q0247/camera.mjpg"
+                        alt="Camera Stream"
+                        style={{
+                          width: "150%",
+                          height: "auto",
+                          maxWidth: "800px",
+                          maxHeight: "aut0",
+                        }} // Adjusted size
+                      />
+                    </MDBox>
+                  </Grid>
+                </Grid>
               </MDBox>
-            </Grid>
-            <div>
-              {/* Add Switch to toggle between "Opt_sensor_slice" and "Opt_sensor_time" */}
-              <label>
-                <input
-                  type="checkbox"
-                  checked={route_influx === "_time"}
-                  onChange={handleSwitchToggle}
-                />
-                Toggle Data Type
-              </label>
-
-              {/* Example: Trigger data fetch for a specific field */}
-
-              {/* Render your data here */}
-            </div>
-            {/* Display last update time */}
-            <Grid item xs={12}>
-              {lastUpdateTime && (
-                <MDBox mb={3}>
-                  <p>
-                    <strong>Last Update: </strong>
-                    {lastUpdateTime}
-                  </p>
-                </MDBox>
-              )}
             </Grid>
 
             {/* Render charts for sensor data */}
@@ -183,6 +210,7 @@ function Dashboard() {
                 )}
               </MDBox>
             </Grid>
+
             <Grid item xs={8} md={8} lg={6}>
               <MDBox mb={8}>
                 {sensorChamberGas && (
@@ -238,6 +266,7 @@ function Dashboard() {
                 )}
               </MDBox>
             </Grid>
+
             <Grid item xs={8} md={8} lg={6}>
               <MDBox mb={8}>
                 {sensorSliceCoatingDuration && (
