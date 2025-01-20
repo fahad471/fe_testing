@@ -21,22 +21,26 @@ function Dashboard() {
   const [route_influx, setRouteInflux] = useState("_slice");
   const [productionIds, setProductionId] = useState(""); // Initially empty production ID
   const [inputProductionId, setInputProductionId] = useState(""); // State to manage input value
+  const [liveCheck, setLiveCheck] = useState(true); // Live data toggle, default to true
+  const [jobDate, setJobDate] = useState(null); // job date, default to null
 
   // Fetch the latest production ID on mount
   useEffect(() => {
     const production_id_url = "http://localhost:8000/api/sensor_data/influx/latest_status";
 
     const fetchProductionId = () => {
-      axios
-        .get(production_id_url)
-        .then((response) => {
-          const latestProductionId = response.data.ProductionID;
-          setProductionId(latestProductionId); // Set the default to the latest production ID
-          setInputProductionId(latestProductionId); // Set the input field to the latest ID
-        })
-        .catch((error) => {
-          console.error("Error fetching production ID:", error);
-        });
+      if (liveCheck) {
+        axios
+          .get(production_id_url)
+          .then((response) => {
+            const latestProductionId = response.data.ProductionID;
+            setProductionId(latestProductionId); // Set the default to the latest production ID
+            setInputProductionId(latestProductionId); // Set the input field to the latest ID
+          })
+          .catch((error) => {
+            console.error("Error fetching production ID:", error);
+          });
+      }
     };
 
     fetchProductionId();
@@ -46,7 +50,7 @@ function Dashboard() {
 
     // Clear interval on unmount
     return () => clearInterval(intervalId);
-  }, []);
+  }, [liveCheck]);
 
   // Fetch data based on production ID
   const fetchData = (field, setter) => {
@@ -76,6 +80,9 @@ function Dashboard() {
             },
           ],
         });
+        const jobDate =
+          response.data.length > 0 ? new Date(response.data[0]._time).toLocaleString() : "No data";
+        setJobDate(jobDate); //
         setLastUpdateTime(new Date().toLocaleString());
       })
       .catch((error) => {
@@ -118,6 +125,11 @@ function Dashboard() {
     }
   }, [productionIds]); // Runs whenever productionIds changes
 
+  // Toggle Live Data stream checkbox
+  const handleLiveToggle = () => {
+    setLiveCheck((prevState) => !prevState);
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -130,7 +142,25 @@ function Dashboard() {
                 <Grid container spacing={1}>
                   {/* Left side: Input field, Button, Toggle, and Last Update */}
                   <Grid item xs={8} md={8} lg={6}>
-                    <div style={{ marginTop: "40px" }}>
+                    <div style={{ marginTop: "0px" }}>
+                      {/* Display last update time */}
+                      {lastUpdateTime && (
+                        <MDBox mb={3}>
+                          <p>
+                            <strong>Last Update: </strong>
+                            {lastUpdateTime}
+                          </p>
+                        </MDBox>
+                      )}
+
+                      <div style={{ marginLeft: "0px", marginTop: "0%", marginBottom: "2%" }}>
+                        {/* Add Switch to toggle between "live data" and "fetching old data" */}
+                        <label>
+                          <input type="checkbox" checked={liveCheck} onChange={handleLiveToggle} />{" "}
+                          Live Data Stream
+                        </label>
+                      </div>
+
                       <TextField
                         label="Enter Production ID"
                         variant="outlined"
@@ -142,18 +172,30 @@ function Dashboard() {
                           width: "300px",
                           fontSize: "16px",
                         }}
+                        disabled={liveCheck}
                       />
                       <Button
                         variant="contained"
                         color="white"
                         onClick={handleFetchData}
                         style={{ marginTop: "0px" }}
+                        disabled={liveCheck}
                       >
                         Fetch Data
                       </Button>
                     </div>
 
-                    <div style={{ marginLeft: "0px", marginTop: "30%" }}>
+                    {/* Display Job date extracted from _time */}
+                    {lastUpdateTime && (
+                      <MDBox mb={3}>
+                        <p>
+                          <strong>Job Date : </strong>
+                          {jobDate}
+                        </p>
+                      </MDBox>
+                    )}
+
+                    <div style={{ marginLeft: "0px", marginTop: "40%" }}>
                       {/* Add Switch to toggle between "Opt_sensor_slice" and "Opt_sensor_time" */}
                       <label>
                         <input
@@ -164,16 +206,6 @@ function Dashboard() {
                         Toggle Data Type
                       </label>
                     </div>
-
-                    {/* Display last update time */}
-                    {lastUpdateTime && (
-                      <MDBox mb={3}>
-                        <p>
-                          <strong>Last Update: </strong>
-                          {lastUpdateTime}
-                        </p>
-                      </MDBox>
-                    )}
                   </Grid>
 
                   {/* Right side: Indoor Camera */}
@@ -186,7 +218,7 @@ function Dashboard() {
                         style={{
                           width: "150%",
                           height: "auto",
-                          maxWidth: "800px",
+                          maxWidth: "1000px",
                           maxHeight: "aut0",
                         }} // Adjusted size
                       />

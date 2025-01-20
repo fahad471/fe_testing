@@ -1,22 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  Modal,
-  Box,
-  IconButton,
-  Checkbox,
-  FormControlLabel,
-  TextField,
-  Button,
-} from "@mui/material";
-
+import { Modal, Box, IconButton, TextField, Button } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { Close as CloseIcon } from "@mui/icons-material";
 
 const Dashboard = () => {
   const [imagesData, setImagesData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [detectDefects, setDetectDefects] = useState(false);
@@ -24,7 +15,6 @@ const Dashboard = () => {
   const [sliceNumber, setSliceNumber] = useState("1028"); // Default slice number
   const [inputSliceNumber, setInputSliceNumber] = useState(sliceNumber); // Temporary state for slice number input
   const [productionId, setProductionId] = useState("f77c322a-1f91-4d9c-91f9-eb1c18163e31"); // Default production ID
-  const [previousSliceNumber, setPreviousSliceNumber] = useState(null); // for tracking previous slice number
 
   // Function to fetch image data based on the slice number and production ID
   const fetchImageData = async (productionId, sliceNumber) => {
@@ -43,13 +33,8 @@ const Dashboard = () => {
     }
   };
 
-  // Initial fetch when the component is mounted with the default slice number and production ID
-  useEffect(() => {
-    fetchImageData(productionId, sliceNumber); // Fetch images when the component mounts or sliceNumber/productionId changes
-  }, [sliceNumber, productionId]); // Dependency on sliceNumber and productionId
-
   // Function to handle the defect detection logic (can be enhanced)
-  const fetchDefectData = async () => {
+  const fetchDefectData = async (inputSliceNumber) => {
     try {
       const response = await axios.post(
         "http://localhost:8000/api/image_data/detect_defects/", // API endpoint for defect detection
@@ -57,9 +42,9 @@ const Dashboard = () => {
         {
           params: {
             detect_defects: true, // Set detect_defects to true
-            slice_number: inputSliceNumber, // Set slice_number to 1028
+            slice_number: inputSliceNumber, // Set slice_number to inputSliceNumber
           },
-        } // Include detect_defects parameter
+        }
       );
 
       // Map defect data to the imagesData array
@@ -80,32 +65,6 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    if (detectDefects) {
-      fetchDefectData(); // Trigger defect detection when checkbox is checked
-    }
-  }, [detectDefects, inputSliceNumber]);
-
-  const openImageModal = (image) => {
-    setSelectedImage(image);
-  };
-
-  const closeImageModal = () => {
-    setSelectedImage(null);
-  };
-
-  const handleDefectDetectionChange = (event) => {
-    setDetectDefects(event.target.checked); // Toggle the defect detection flag
-  };
-
-  const handleImageLoad = (imageId, e) => {
-    const { naturalWidth, naturalHeight } = e.target;
-    setImageDimensions((prev) => ({
-      ...prev,
-      [imageId]: { width: naturalWidth, height: naturalHeight },
-    }));
-  };
-
   // Handle input change for slice number field
   const handleSliceNumberInputChange = (event) => {
     setInputSliceNumber(event.target.value); // Update temporary input state
@@ -117,18 +76,61 @@ const Dashboard = () => {
   };
 
   // Button click to fetch images based on input slice number and production ID
-  const handleFetchData = () => {
-    if (inputSliceNumber !== previousSliceNumber) {
-      // If the slice number has changed, reset detectDefects to false
-      setDetectDefects(false);
+  const handleFetchData = async () => {
+    await fetchImageData(productionId, inputSliceNumber); // Fetch images based on the current input values
 
-      // Fetch images with the new slice number and production ID
-      fetchImageData(productionId, inputSliceNumber);
-
-      // Update previous slice number
-      setPreviousSliceNumber(inputSliceNumber);
+    setDetectDefects(false);
+    // Trigger defect detection if checkbox is checked
+    if (detectDefects) {
+      await fetchDefectData(inputSliceNumber); // Fetch defect data based on inputSliceNumber
     }
   };
+
+  // Handle the defect detection checkbox change
+  const handleDefectDetectionChange = (event) => {
+    setDetectDefects(event.target.checked); // Toggle the defect detection flag
+    // If defect detection is enabled, fetch defect data immediately after toggling
+    if (event.target.checked) {
+      fetchDefectData(inputSliceNumber); // Fetch defect data immediately when checked
+    } else {
+      // Optionally, clear defect data or reset the detections if unchecked
+      const updatedImages = imagesData.map((image) => ({
+        ...image,
+        detections: [],
+      }));
+      setImagesData(updatedImages); // Reset detections
+    }
+  };
+
+  // Function to open the image modal for a selected image
+  const openImageModal = (image) => {
+    setSelectedImage(image);
+  };
+
+  // Function to close the image modal
+  const closeImageModal = () => {
+    setSelectedImage(null);
+  };
+
+  // Handle image load and update image dimensions
+  const handleImageLoad = (imageId, e) => {
+    const { naturalWidth, naturalHeight } = e.target;
+    setImageDimensions((prev) => ({
+      ...prev,
+      [imageId]: { width: naturalWidth, height: naturalHeight },
+    }));
+  };
+
+  // Fetch data on initial load (page refresh)
+  useEffect(() => {
+    // Fetch data using default values on first load
+    fetchImageData(productionId, sliceNumber);
+
+    // If defect detection is enabled, also fetch defect data
+    if (detectDefects) {
+      fetchDefectData(sliceNumber);
+    }
+  }, []); // Empty dependency array ensures this runs only once on page load
 
   if (loading) {
     return (
@@ -157,52 +159,34 @@ const Dashboard = () => {
     <DashboardLayout>
       <DashboardNavbar />
       <div>
-        {" "}
-        {/*style={{ paddingTop: "20px", paddingLeft: "300px" }}*/}
-        {/* <h2 style={{ fontFamily: "Arial, sans-serif", fontSize: "18px" }}>Image Dashboard</h2> */}
-        <div style={{ paddingTop: "5px" }}>
-          {/* Text input for production ID */}
-          <TextField
-            label="Production ID"
-            variant="outlined"
-            value={productionId} // Use the state for production ID
-            onChange={handleProductionIdInputChange} // Update production ID state on input change
-            style={{ marginBottom: "30px", marginRight: "20px", width: "300px", fontSize: "16px" }}
-          />
-          {/* Text input for slice number */}
-          <TextField
-            label="Slice Number"
-            variant="outlined"
-            value={inputSliceNumber} // Use the temporary state for the input field
-            onChange={handleSliceNumberInputChange} // Update temporary state on input change
-            style={{ marginBottom: "30px", marginRight: "20px", fontSize: "16px" }}
-          />
-          <Button variant="contained" color="white" onClick={handleFetchData}>
-            Fetch Images
-          </Button>
-        </div>
-        {/* 
-      <div>
-       // Checkbox to toggle defect detection 
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={detectDefects}
-              onChange={handleDefectDetectionChange}
-              name="detectDefects"
-            />
-          }
-          label="Enable Defect Detection"
+        {/* Text input for production ID */}
+        <TextField
+          label="Production ID"
+          variant="outlined"
+          value={productionId} // Use the state for production ID
+          onChange={handleProductionIdInputChange} // Update production ID state on input change
+          style={{ marginBottom: "30px", marginRight: "20px", width: "300px", fontSize: "16px" }}
         />
-      </div>
-       */}
+        {/* Text input for slice number */}
+        <TextField
+          label="Slice Number"
+          variant="outlined"
+          value={inputSliceNumber} // Use the temporary state for the input field
+          onChange={handleSliceNumberInputChange} // Update temporary state on input change
+          style={{ marginBottom: "30px", marginRight: "20px", fontSize: "16px" }}
+        />
+        <Button variant="contained" color="white" onClick={handleFetchData}>
+          Fetch Images
+        </Button>
+
+        {/* Checkbox to toggle defect detection */}
         <div>
-          {/* Add Switch to toggle between "defect detection " */}
           <label>
             <input type="checkbox" checked={detectDefects} onChange={handleDefectDetectionChange} />{" "}
             Enable Defect Detection
           </label>
         </div>
+
         <div
           className="image-gallery"
           style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}
@@ -246,7 +230,7 @@ const Dashboard = () => {
                     }}
                   >
                     {image.detections.map((detection, idx) => {
-                      const { box, label } = detection; // Assuming each detection contains 'box' and 'label'
+                      const { box, label } = detection;
                       const [centerX, centerY, width, height] = box;
 
                       const imageDimension = imageDimensions[image.id] || { width: 1, height: 1 };
@@ -269,7 +253,7 @@ const Dashboard = () => {
                       };
 
                       // Get the defect label by the detection labelId
-                      const defectLabel = defectLabels[label] || "Unknown Defect"; // Default to "Unknown Defect" if the ID doesn't match
+                      const defectLabel = defectLabels[label] || "Unknown Defect";
 
                       return (
                         <div
@@ -284,11 +268,10 @@ const Dashboard = () => {
                             boxSizing: "border-box",
                           }}
                         >
-                          {/* Label for the bounding box */}
                           <div
                             style={{
                               position: "absolute",
-                              top: "-25px", // Adjust as needed
+                              top: "-25px",
                               left: "50%",
                               transform: "translateX(-50%)",
                               color: "red",
@@ -299,7 +282,7 @@ const Dashboard = () => {
                               borderRadius: "5px",
                             }}
                           >
-                            {defectLabel} {/* Label text */}
+                            {defectLabel}
                           </div>
                         </div>
                       );
@@ -310,6 +293,7 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
+
         {/* Modal for viewing the image in a larger view */}
         <Modal
           open={selectedImage !== null}
