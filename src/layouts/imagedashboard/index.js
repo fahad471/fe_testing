@@ -7,6 +7,8 @@ import { Close as CloseIcon } from "@mui/icons-material";
 
 const Dashboard = () => {
   const [imagesData, setImagesData] = useState([]);
+  const [amiquamData, setAmiquamData] = useState([]);
+  const [amiquamloading, setAmiquamLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -65,6 +67,24 @@ const Dashboard = () => {
     }
   };
 
+  // Function to fetch image data based on the slice number and production ID
+  const fetchAmiquamData = async (productionId, sliceNumber) => {
+    setAmiquamLoading(true); // Show the loading state
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/parameter_data/mongo/inspection-data-legacy?production_id=${productionId}&slice_number=${sliceNumber}`
+        // `http://localhost:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
+      );
+      setAmiquamData(response.data); // Update the images data with the new images fetched from the backend
+      setError(null); // Reset the error state if the fetch was successful
+    } catch (err) {
+      setError("Error fetching amiquam data");
+      console.error(err);
+    } finally {
+      setAmiquamLoading(false); // Hide loading state after the request completes
+    }
+  };
+
   // Handle input change for slice number field
   const handleSliceNumberInputChange = (event) => {
     setInputSliceNumber(event.target.value); // Update temporary input state
@@ -78,6 +98,7 @@ const Dashboard = () => {
   // Button click to fetch images based on input slice number and production ID
   const handleFetchData = async () => {
     await fetchImageData(productionId, inputSliceNumber); // Fetch images based on the current input values
+    await fetchAmiquamData(productionId, inputSliceNumber);
 
     setDetectDefects(false);
     // Trigger defect detection if checkbox is checked
@@ -125,6 +146,7 @@ const Dashboard = () => {
   useEffect(() => {
     // Fetch data using default values on first load
     fetchImageData(productionId, sliceNumber);
+    fetchAmiquamData(productionId, sliceNumber);
 
     // If defect detection is enabled, also fetch defect data
     if (detectDefects) {
