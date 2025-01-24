@@ -130,6 +130,34 @@ function Dashboard() {
     setLiveCheck((prevState) => !prevState);
   };
 
+  // Chart Configuration
+  const chartOptions = {
+    responsive: true,
+    scales: {
+      x: {
+        type: "category", // X-axis for Slice
+        position: "bottom", // Position slice data on the x-axis
+        labels: sensorChartData?.labels, // Slice labels
+        title: {
+          display: true,
+          text: "Slice",
+        },
+      },
+      x1: {
+        type: "category", // X-axis for Time
+        position: "bottom", // Position time data below the slice
+        labels: sensorChartData?.labels, // Time labels
+        title: {
+          display: true,
+          text: "Time",
+        },
+        grid: {
+          drawOnChartArea: false, // Disable gridlines for the time axis
+        },
+      },
+    },
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -238,6 +266,7 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorChartData}
+                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -252,6 +281,7 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorChamberGas}
+                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -266,6 +296,7 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorEnvironmentHumidity}
+                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -280,6 +311,7 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorRecoaterStatus}
+                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -294,6 +326,7 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorSliceUsedPowderVolume}
+                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -308,6 +341,7 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorSliceCoatingDuration}
+                    options={chartOptions}
                   />
                 )}
               </MDBox>
