@@ -52,38 +52,80 @@ function Dashboard() {
     return () => clearInterval(intervalId);
   }, [liveCheck]);
 
-  // Fetch data based on production ID
+  // // Fetch data based on production ID
+  // const fetchData = (field, setter) => {
+  //   const API_URL =
+  //     "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor" +
+  //     route_influx +
+  //     "?production_id=" +
+  //     productionIds +
+  //     "&field=" +
+  //     field;
+
+  //   axios
+  //     .get(API_URL)
+  //     .then((response) => {
+  //       const timeLabels = response.data.map((item) =>
+  //         route_influx === "_slice" ? item._slice : item._time
+  //       );
+  //       const values = response.data.map((item) => item._value);
+
+  //       setter({
+  //         labels: timeLabels,
+  //         datasets: [
+  //           {
+  //             label: field,
+  //             color: "success", // Default color, adjust dynamically if needed
+  //             data: values,
+  //           },
+  //         ],
+  //       });
+  //       const jobDate =
+  //         response.data.length > 0 ? new Date(response.data[0]._time).toLocaleString() : "No data";
+  //       setJobDate(jobDate); //
+  //       setLastUpdateTime(new Date().toLocaleString());
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error fetching data:", error);
+  //     });
+  // };
+
+  // Fetch data for slice and time (separately) for each sensor
   const fetchData = (field, setter) => {
-    const API_URL =
-      "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor" +
-      route_influx +
-      "?production_id=" +
-      productionIds +
-      "&field=" +
-      field;
+    const sliceAPI_URL = `http://localhost:8000/api/sensor_data/influx/Opt_sensor_slice?production_id=${productionIds}&field=${field}`;
+    const timeAPI_URL = `http://localhost:8000/api/sensor_data/influx/Opt_sensor_time?production_id=${productionIds}&field=${field}`;
 
-    axios
-      .get(API_URL)
-      .then((response) => {
-        const timeLabels = response.data.map((item) =>
-          route_influx === "_slice" ? item._slice : item._time
-        );
-        const values = response.data.map((item) => item._value);
+    // Fetch both slice and time data concurrently
+    Promise.all([axios.get(sliceAPI_URL), axios.get(timeAPI_URL)])
+      .then((responses) => {
+        const sliceData = responses[0].data;
+        const timeData = responses[1].data;
 
-        setter({
-          labels: timeLabels,
-          datasets: [
-            {
-              label: field,
-              color: "success", // Default color, adjust dynamically if needed
-              data: values,
-            },
-          ],
-        });
-        const jobDate =
-          response.data.length > 0 ? new Date(response.data[0]._time).toLocaleString() : "No data";
-        setJobDate(jobDate); //
-        setLastUpdateTime(new Date().toLocaleString());
+        // Ensure both datasets are valid (i.e., they have matching lengths)
+        if (sliceData.length && timeData.length) {
+          // Combine the slice data for x-axis, and use the values for both time and slice
+          setter({
+            labels: sliceData.map((item) => item._slice), // Use only slice data for x-axis labels
+            datasets: [
+              {
+                label: `${field} (Slice)`,
+                color: "success", // You can adjust the color dynamically if needed
+                data: sliceData.map((item) => item._value), // Use values from sliceData
+              },
+              {
+                label: `${field} (Time)`,
+                color: "primary", // You can adjust the color dynamically if needed
+                data: timeData.map((item) => item._value), // Use values from timeData
+              },
+            ],
+          });
+
+          // Extract the first job date from timeData
+          const jobDate =
+            timeData.length > 0 ? new Date(timeData[0]._time).toLocaleString() : "No data";
+          setJobDate(jobDate);
+          setLastUpdateTime(new Date().toLocaleString());
+        }
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
@@ -184,7 +226,11 @@ function Dashboard() {
                       <div style={{ marginLeft: "0px", marginTop: "0%", marginBottom: "2%" }}>
                         {/* Add Switch to toggle between "live data" and "fetching old data" */}
                         <label>
-                          <input type="checkbox" checked={liveCheck} onChange={handleLiveToggle} />{" "}
+                          <input
+                            type="checkbox"
+                            checked={liveCheck}
+                            onChange={() => setLiveCheck(!liveCheck)}
+                          />{" "}
                           Live Data Stream
                         </label>
                       </div>
@@ -214,7 +260,7 @@ function Dashboard() {
                     </div>
 
                     {/* Display Job date extracted from _time */}
-                    {lastUpdateTime && (
+                    {jobDate && (
                       <MDBox mb={3}>
                         <p>
                           <strong>Job Date : </strong>
@@ -223,8 +269,8 @@ function Dashboard() {
                       </MDBox>
                     )}
 
-                    <div style={{ marginLeft: "0px", marginTop: "40%" }}>
-                      {/* Add Switch to toggle between "Opt_sensor_slice" and "Opt_sensor_time" */}
+                    {/* <div style={{ marginLeft: "0px", marginTop: "40%" }}>
+                      {/*Add Switch to toggle between "Opt_sensor_slice" and "Opt_sensor_time"} 
                       <label>
                         <input
                           type="checkbox"
@@ -233,7 +279,7 @@ function Dashboard() {
                         />{" "}
                         Toggle Data Type
                       </label>
-                    </div>
+                    </div> */}
                   </Grid>
 
                   {/* Right side: Indoor Camera */}
@@ -264,7 +310,7 @@ function Dashboard() {
                     icon={{ color: "success", component: "leaderboard" }}
                     title="Oxygen Concentration"
                     height="20rem"
-                    description="Sensor data over time"
+                    description="Sensor data over time and slice"
                     chart={sensorChartData}
                     options={chartOptions}
                   />
