@@ -100,30 +100,28 @@ function Dashboard() {
       .then((responses) => {
         const sliceData = responses[0].data;
         const timeData = responses[1].data;
+        console.log("Slice Data:", sliceData);
+        console.log("Time Data:", timeData);
 
-        // Ensure both datasets are valid (i.e., they have matching lengths)
         if (sliceData.length && timeData.length) {
-          // Combine the slice data for x-axis, and use the values for both time and slice
+          // Combine the slice and time data for x-axis labels
           const combinedLabels = sliceData.map((item, index) => {
             const slice = item._slice;
-            const time = timeData && timeData[index] ? timeData[index]._time : "";
-            return `Slice ${slice} - ${time}`;
+
+            const time = timeData[index]?._time || "";
+            const date = new Date(time);
+            const stime = date.toTimeString().slice(0, 5);
+            return `Slice ${slice} - ${stime}`;
           });
 
+          // Update chart data and x-axis information
           setter({
-            labels: sliceData.map((item) => item._slice), // Use only slice data for x-axis labels
+            labels: combinedLabels, // Use combinedLabels for x-axis labels
             datasets: [
               {
-                label: `${field}`,
-                color: "success", // You can adjust the color dynamically if needed
-                data: sliceData.map((item) => item._value), // Use values from sliceData
-                xAxisID: "x", // Use the bottom x-axis
-              },
-              {
-                label: `${field} (Time)`,
-                color: "primary", // You can adjust the color dynamically if needed
-                data: timeData.map((item) => item._value), // Use values from timeData
-                xAxisID: "x1", // Use the top x-axis
+                label: `${field} - Slice Data`,
+                borderColor: "green", // You can adjust the color dynamically if needed
+                data: sliceData.map((item) => item._value), // Data from sliceData
               },
             ],
           });
@@ -132,7 +130,11 @@ function Dashboard() {
           const jobDate =
             timeData.length > 0 ? new Date(timeData[0]._time).toLocaleString() : "No data";
           setJobDate(jobDate);
+
+          // Set the last update time
           setLastUpdateTime(new Date().toLocaleString());
+        } else {
+          console.log("Data is missing or empty");
         }
       })
       .catch((error) => {
@@ -146,15 +148,15 @@ function Dashboard() {
   };
 
   // Toggle the route_influx state when the switch is toggled
-  const handleSwitchToggle = (event) => {
-    setRouteInflux(event.target.checked ? "_time" : "_slice");
-    fetchData("ProcessChamberOxygenConcentration", setSensorChartData);
-    fetchData("ShieldingGasConsumption", setSensorChamberGas);
-    fetchData("EnvironmentHumidity", setSensorEnvironmentHumidity);
-    fetchData("RecoaterStatus", setSensorRecoaterStatus);
-    fetchData("SliceUsedPowderVolume", setSensorSliceUsedPowderVolume);
-    fetchData("SliceCoatingDuration", setSensorSliceCoatingDuration);
-  };
+  // const handleSwitchToggle = (event) => {
+  //   setRouteInflux(event.target.checked ? "_time" : "_slice");
+  //   fetchData("ProcessChamberOxygenConcentration", setSensorChartData);
+  //   fetchData("ShieldingGasConsumption", setSensorChamberGas);
+  //   fetchData("EnvironmentHumidity", setSensorEnvironmentHumidity);
+  //   fetchData("RecoaterStatus", setSensorRecoaterStatus);
+  //   fetchData("SliceUsedPowderVolume", setSensorSliceUsedPowderVolume);
+  //   fetchData("SliceCoatingDuration", setSensorSliceCoatingDuration);
+  // };
 
   // Handle fetch on button click
   const handleFetchData = () => {
@@ -181,26 +183,59 @@ function Dashboard() {
   };
 
   // Chart Configuration
-  const chartOptions = {
-    responsive: true,
-    scales: {
-      x: {
-        type: "category",
-        position: "bottom",
-        labels: sensorChartData?.labels,
-        title: {
-          display: true,
-          text: "Slice and Time",
-        },
-        ticks: {
-          rotation: 45,
+  // const chartOptions = {
+  //   responsive: true,
+  //   scales: {
+  //     x: {
+  //       type: "category",
+  //       position: "bottom",
+  //       labels: sensorChartData?._time || [], // Use time labels for bottom x-axis
+  //       title: {
+  //         display: true,
+  //         text: "Time", // Correct title for the x-axis
+  //       },
+  //       ticks: {
+  //         rotation: 45,
+  //         autoSkip: false,
+  //         maxRotation: 90,
+  //         callback: function (value, index, values) {
+  //           const labelCount = sensorChartData?._time.length || 0; // Use time data for label count
+  //           const step = Math.floor(labelCount * 0.9); // 20% of the total number of labels
 
-          autoSkip: true,
-          maxRotation: 90,
-        },
-      },
-    },
-  };
+  //           // Only show labels at intervals determined by step
+  //           return index % step === 0 ? value : "";
+  //         },
+  //       },
+  //       grid: {
+  //         display: true, // Enable grid for bottom x-axis
+  //       },
+  //     },
+  //     x1: {
+  //       type: "category",
+  //       position: "top",
+  //       labels: sensorChartData?._slice || [], // Use slice labels for top x-axis
+  //       title: {
+  //         display: true,
+  //         text: "Slice", // Correct title for the top x-axis
+  //       },
+  //       ticks: {
+  //         rotation: 45,
+  //         autoSkip: false,
+  //         maxRotation: 90,
+  //         callback: function (value, index, values) {
+  //           const labelCount = sensorChartData?._slice.length || 0; // Use slice data for label count
+  //           const step = Math.floor(labelCount * 0.05); // 20% of the total number of labels
+
+  //           // Only show labels at intervals determined by step
+  //           return index % step === 0 ? value : "";
+  //         },
+  //       },
+  //       grid: {
+  //         display: false, // Disable grid for top x-axis
+  //       },
+  //     },
+  //   },
+  // };
 
   return (
     <DashboardLayout>
@@ -310,7 +345,6 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time and slice"
                     chart={sensorChartData}
-                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -325,7 +359,6 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorChamberGas}
-                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -340,7 +373,6 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorEnvironmentHumidity}
-                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -355,7 +387,6 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorRecoaterStatus}
-                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -370,7 +401,6 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorSliceUsedPowderVolume}
-                    options={chartOptions}
                   />
                 )}
               </MDBox>
@@ -385,7 +415,6 @@ function Dashboard() {
                     height="20rem"
                     description="Sensor data over time"
                     chart={sensorSliceCoatingDuration}
-                    options={chartOptions}
                   />
                 )}
               </MDBox>
