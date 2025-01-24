@@ -4,6 +4,8 @@ import { Modal, Box, IconButton, TextField, Button } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { Close as CloseIcon } from "@mui/icons-material";
+import { Line } from "react-chartjs-2";
+import { Chart as ChartJS } from "chart.js/auto";
 
 const Dashboard = () => {
   const [imagesData, setImagesData] = useState([]);
@@ -14,9 +16,9 @@ const Dashboard = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [detectDefects, setDetectDefects] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({});
-  const [sliceNumber, setSliceNumber] = useState("1028"); // Default slice number
+  const [sliceNumber, setSliceNumber] = useState("10"); // Default slice number
   const [inputSliceNumber, setInputSliceNumber] = useState(sliceNumber); // Temporary state for slice number input
-  const [productionId, setProductionId] = useState("f77c322a-1f91-4d9c-91f9-eb1c18163e31"); // Default production ID
+  const [productionId, setProductionId] = useState("31daea9f-7091-45fb-97f5-99354e3f7da1"); // Default production ID
 
   // Function to fetch image data based on the slice number and production ID
   const fetchImageData = async (productionId, sliceNumber) => {
@@ -75,6 +77,7 @@ const Dashboard = () => {
         `http://127.0.0.1:8000/api/parameter_data/mongo/inspection-data-legacy?production_id=${productionId}&slice_number=${sliceNumber}`
         // `http://localhost:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
       );
+      console.log("Amiquam Data:", response.data);
       setAmiquamData(response.data); // Update the images data with the new images fetched from the backend
       setError(null); // Reset the error state if the fetch was successful
     } catch (err) {
@@ -142,6 +145,42 @@ const Dashboard = () => {
     }));
   };
 
+  //handle amiquamdata
+  const getChartData = (amiquamData, objectType) => {
+    const liftoffValues = amiquamData
+      .map((entry) => entry[objectType]?.liftoff)
+      .filter((value) => value !== undefined);
+
+    return {
+      labels: liftoffValues.map((_, index) => `Sample ${index + 1}`), // Label for x-axis
+      datasets: [
+        {
+          label: `Liftoff (${objectType})`,
+          data: liftoffValues,
+          borderColor: objectType === "0" ? "blue" : "green",
+          tension: 0.4,
+          fill: false,
+        },
+      ],
+      options: {
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Sample Index", // X-axis label
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Liftoff Value", // Y-axis label
+            },
+          },
+        },
+      },
+    };
+  };
+
   // Fetch data on initial load (page refresh)
   useEffect(() => {
     // Fetch data using default values on first load
@@ -187,6 +226,7 @@ const Dashboard = () => {
           variant="outlined"
           value={productionId} // Use the state for production ID
           onChange={handleProductionIdInputChange} // Update production ID state on input change
+          //onChange={(e) => setProductionId(e.target.value)}
           style={{ marginBottom: "30px", marginRight: "20px", width: "300px", fontSize: "16px" }}
         />
         {/* Text input for slice number */}
@@ -195,10 +235,18 @@ const Dashboard = () => {
           variant="outlined"
           value={inputSliceNumber} // Use the temporary state for the input field
           onChange={handleSliceNumberInputChange} // Update temporary state on input change
+          //onChange={(e) => setInputSliceNumber(e.target.value)}
           style={{ marginBottom: "30px", marginRight: "20px", fontSize: "16px" }}
         />
-        <Button variant="contained" color="white" onClick={handleFetchData}>
-          Fetch Images
+        <Button
+          variant="contained"
+          color="white"
+          onClick={() => {
+            fetchAmiquamData(productionId, inputSliceNumber);
+            handleFetchData();
+          }}
+        >
+          Fetch Data
         </Button>
 
         {/* Checkbox to toggle defect detection */}
@@ -315,6 +363,44 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
+
+        {/* Display Amiquam Data graph */}
+        {/* Display Amiquam Data in a Table */}
+        {amiquamData.length > 0 && (
+          <div style={{ marginTop: "30px" }}>
+            <h4>Amiquam Data Table</h4>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={{ border: "1px solid black", padding: "8px" }}>Object Type</th>
+                  <th style={{ border: "1px solid black", padding: "8px" }}>Liftoff Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {amiquamData.map((entry, index) => (
+                  <tr key={index}>
+                    <td style={{ border: "1px solid black", padding: "8px" }}>
+                      {entry["0"] ? "Object 0" : "Object 1"}
+                    </td>
+                    <td style={{ border: "1px solid black", padding: "8px" }}>
+                      {entry["0"] ? entry["0"].liftoff : entry["1"] ? entry["1"].liftoff : "N/A"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Display Amiquam Data Graph if Needed */}
+        {amiquamData.length > 0 && (
+          <div>
+            <h4>Object 0 Liftoff</h4>
+            <Line data={getChartData(amiquamData, "0")} />
+            <h4>Object 1 Liftoff</h4>
+            <Line data={getChartData(amiquamData, "1")} />
+          </div>
+        )}
 
         {/* Modal for viewing the image in a larger view */}
         <Modal
