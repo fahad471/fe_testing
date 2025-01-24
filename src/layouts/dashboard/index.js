@@ -104,18 +104,26 @@ function Dashboard() {
         // Ensure both datasets are valid (i.e., they have matching lengths)
         if (sliceData.length && timeData.length) {
           // Combine the slice data for x-axis, and use the values for both time and slice
+          const combinedLabels = sliceData.map((item, index) => {
+            const slice = item._slice;
+            const time = timeData && timeData[index] ? timeData[index]._time : "";
+            return `Slice ${slice} - ${time}`;
+          });
+
           setter({
             labels: sliceData.map((item) => item._slice), // Use only slice data for x-axis labels
             datasets: [
               {
-                label: `${field} (Slice)`,
+                label: `${field}`,
                 color: "success", // You can adjust the color dynamically if needed
                 data: sliceData.map((item) => item._value), // Use values from sliceData
+                xAxisID: "x", // Use the bottom x-axis
               },
               {
                 label: `${field} (Time)`,
                 color: "primary", // You can adjust the color dynamically if needed
                 data: timeData.map((item) => item._value), // Use values from timeData
+                xAxisID: "x1", // Use the top x-axis
               },
             ],
           });
@@ -177,24 +185,18 @@ function Dashboard() {
     responsive: true,
     scales: {
       x: {
-        type: "category", // X-axis for Slice
-        position: "bottom", // Position slice data on the x-axis
-        labels: sensorChartData?.labels, // Slice labels
+        type: "category",
+        position: "bottom",
+        labels: sensorChartData?.labels,
         title: {
           display: true,
-          text: "Slice",
+          text: "Slice and Time",
         },
-      },
-      x1: {
-        type: "category", // X-axis for Time
-        position: "bottom", // Position time data below the slice
-        labels: sensorChartData?.labels, // Time labels
-        title: {
-          display: true,
-          text: "Time",
-        },
-        grid: {
-          drawOnChartArea: false, // Disable gridlines for the time axis
+        ticks: {
+          rotation: 45,
+
+          autoSkip: true,
+          maxRotation: 90,
         },
       },
     },
@@ -226,11 +228,7 @@ function Dashboard() {
                       <div style={{ marginLeft: "0px", marginTop: "0%", marginBottom: "2%" }}>
                         {/* Add Switch to toggle between "live data" and "fetching old data" */}
                         <label>
-                          <input
-                            type="checkbox"
-                            checked={liveCheck}
-                            onChange={() => setLiveCheck(!liveCheck)}
-                          />{" "}
+                          <input type="checkbox" checked={liveCheck} onChange={handleLiveToggle} />{" "}
                           Live Data Stream
                         </label>
                       </div>
