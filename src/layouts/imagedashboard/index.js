@@ -69,7 +69,7 @@ const Dashboard = () => {
     }
   };
 
-  // Function to fetch image data based on the slice number and production ID
+  // Function to fetch amiquam data based on slice number and production ID
   const fetchAmiquamData = async (productionId, sliceNumber) => {
     setAmiquamLoading(true); // Show the loading state
     try {
@@ -78,7 +78,7 @@ const Dashboard = () => {
         // `http://localhost:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
       );
       console.log("Amiquam Data:", response.data);
-      setAmiquamData(response.data); // Update the images data with the new images fetched from the backend
+      setAmiquamData(response.data); // Update the amiquam data with the new images fetched from the backend
       setError(null); // Reset the error state if the fetch was successful
     } catch (err) {
       setError("Error fetching amiquam data");
@@ -257,116 +257,121 @@ const Dashboard = () => {
           </label>
         </div>
 
-        <div
-          className="image-gallery"
-          style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}
-        >
-          {imagesData.map((image) => (
-            <div className="Image Position" style={{ textAlign: "center" }} key={image.id}>
-              <h3>{image.position}</h3>
-              <div className="image-item" style={{ textAlign: "center", position: "relative" }}>
-                <img
-                  src={`http://localhost:8000/${image.image}`} // Corrected image URL
-                  alt={`Position: ${image.position}`} // Corrected alt text
-                  style={{ width: "100%", height: "auto", cursor: "pointer" }}
-                  onClick={() => openImageModal(image)}
-                  onLoad={(e) => handleImageLoad(image.id, e)} // Pass the event and image ID
-                />
+        {/* Main layout */}
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "20px" }}>
+          {/* Image Gallery */}
+          <div
+            className="image-gallery"
+            style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}
+          >
+            {imagesData.map((image) => (
+              <div className="Image Position" style={{ textAlign: "center" }} key={image.id}>
+                <h3>{image.position}</h3>
+                <div className="image-item" style={{ textAlign: "center", position: "relative" }}>
+                  <img
+                    src={`http://localhost:8000/${image.image}`} // Corrected image URL
+                    alt={`Position: ${image.position}`} // Corrected alt text
+                    style={{ width: "100%", height: "auto", cursor: "pointer" }}
+                    onClick={() => openImageModal(image)}
+                    onLoad={(e) => handleImageLoad(image.id, e)} // Pass the event and image ID
+                  />
 
-                {detectDefects && image.detections && image.detections.length === 0 && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%)",
-                      color: "red",
-                      fontWeight: "bold",
-                      fontSize: "20px",
-                    }}
-                  >
-                    No defects detected
-                  </div>
-                )}
+                  {detectDefects && image.detections && image.detections.length === 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        color: "red",
+                        fontWeight: "bold",
+                        fontSize: "20px",
+                      }}
+                    >
+                      No defects detected
+                    </div>
+                  )}
 
-                {image.detections && image.detections.length > 0 && detectDefects && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                    }}
-                  >
-                    {image.detections.map((detection, idx) => {
-                      const { box, label } = detection;
-                      const [centerX, centerY, width, height] = box;
+                  {image.detections && image.detections.length > 0 && detectDefects && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    >
+                      {image.detections.map((detection, idx) => {
+                        const { box, label } = detection;
+                        const [centerX, centerY, width, height] = box;
 
-                      const imageDimension = imageDimensions[image.id] || { width: 1, height: 1 };
-                      const scaleX = imageDimension.width / 640; // Assuming 640 is the base image size for scaling
-                      const scaleY = imageDimension.height / 640;
+                        const imageDimension = imageDimensions[image.id] || { width: 1, height: 1 };
+                        const scaleX = imageDimension.width / 640; // Assuming 640 is the base image size for scaling
+                        const scaleY = imageDimension.height / 640;
 
-                      const boxLeft = centerX * scaleX;
-                      const boxTop = centerY * scaleY;
-                      const boxWidth = width * scaleX * 1.1;
-                      const boxHeight = height * scaleY * 1.1;
+                        const boxLeft = centerX * scaleX;
+                        const boxTop = centerY * scaleY;
+                        const boxWidth = width * scaleX * 1.1;
+                        const boxHeight = height * scaleY * 1.1;
 
-                      const new_boxleft = ((boxLeft - boxWidth / 1.5) / imageDimension.width) * 100;
-                      const new_boxtop = ((boxTop - boxHeight / 1.5) / imageDimension.height) * 100;
+                        const new_boxleft =
+                          ((boxLeft - boxWidth / 1.5) / imageDimension.width) * 100;
+                        const new_boxtop =
+                          ((boxTop - boxHeight / 1.5) / imageDimension.height) * 100;
 
-                      // Mapping numeric label IDs to descriptive defect names
-                      const defectLabels = {
-                        0: "Grooves_defect",
-                        1: "Protruding_defect",
-                        2: "Recoating_defect",
-                      };
+                        // Mapping numeric label IDs to descriptive defect names
+                        const defectLabels = {
+                          0: "Grooves_defect",
+                          1: "Protruding_defect",
+                          2: "Recoating_defect",
+                        };
 
-                      // Get the defect label by the detection labelId
-                      const defectLabel = defectLabels[label] || "Unknown Defect";
+                        // Get the defect label by the detection labelId
+                        const defectLabel = defectLabels[label] || "Unknown Defect";
 
-                      return (
-                        <div
-                          key={idx}
-                          style={{
-                            position: "absolute",
-                            left: `${new_boxleft}%`,
-                            top: `${new_boxtop}%`,
-                            width: `${boxWidth}px`,
-                            height: `${boxHeight}px`,
-                            border: "2px solid red",
-                            boxSizing: "border-box",
-                          }}
-                        >
+                        return (
                           <div
+                            key={idx}
                             style={{
                               position: "absolute",
-                              top: "-25px",
-                              left: "50%",
-                              transform: "translateX(-50%)",
-                              color: "red",
-                              fontSize: "12px",
-                              fontWeight: "bold",
-                              backgroundColor: "white",
-                              padding: "2px 5px",
-                              borderRadius: "5px",
+                              left: `${new_boxleft}%`,
+                              top: `${new_boxtop}%`,
+                              width: `${boxWidth}px`,
+                              height: `${boxHeight}px`,
+                              border: "2px solid red",
+                              boxSizing: "border-box",
                             }}
                           >
-                            {defectLabel}
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "-25px",
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                color: "red",
+                                fontSize: "12px",
+                                fontWeight: "bold",
+                                backgroundColor: "white",
+                                padding: "2px 5px",
+                                borderRadius: "5px",
+                              }}
+                            >
+                              {defectLabel}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Display Amiquam Data graph */}
-        {/* Display Amiquam Data in a Table */}
-        {amiquamData.length > 0 && (
+          {/* Display Amiquam Data graph */}
+          {/* Display Amiquam Data in a Table */}
+          {/* {amiquamData.length > 0 && (
           <div style={{ marginTop: "30px" }}>
             <h4>Amiquam Data Table</h4>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -390,17 +395,20 @@ const Dashboard = () => {
               </tbody>
             </table>
           </div>
-        )}
+        )} */}
 
-        {/* Display Amiquam Data Graph if Needed */}
-        {amiquamData.length > 0 && (
-          <div>
-            <h4>Object 0 Liftoff</h4>
-            <Line data={getChartData(amiquamData, "0")} />
-            <h4>Object 1 Liftoff</h4>
-            <Line data={getChartData(amiquamData, "1")} />
+          {/* Display Amiquam Data Graph if Needed */}
+          <div style={{ flex: 1, width: "30%" }}>
+            {amiquamData.length > 0 && (
+              <div>
+                <h4>Object 0 Liftoff</h4>
+                <Line data={getChartData(amiquamData, "0")} />
+                <h4>Object 1 Liftoff</h4>
+                <Line data={getChartData(amiquamData, "1")} />
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Modal for viewing the image in a larger view */}
         <Modal
