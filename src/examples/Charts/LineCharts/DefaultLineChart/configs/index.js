@@ -15,69 +15,105 @@ Coded by www.creative-tim.com
 // Material Dashboard 2 React base styles
 import typography from "assets/theme/base/typography";
 
-function configs(labels, datasets) {
+function configs(labels, datasets, customOptions) {
+  // Default options definition moved here
+  const defaultOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    interaction: {
+      intersect: false,
+      mode: "index",
+    },
+    scales: {
+      y: {
+        grid: {
+          drawBorder: false,
+          display: true,
+          drawOnChartArea: true,
+          drawTicks: false,
+          borderDash: [5, 5],
+          color: "#c1c4ce5c",
+        },
+        ticks: {
+          display: true,
+          padding: 10,
+          color: "#b2b9bf",
+          font: {
+            size: 11,
+            family: typography.fontFamily,
+            style: "normal",
+            lineHeight: 2,
+          },
+        },
+      },
+      x: {
+        grid: {
+          drawBorder: false,
+          display: true,
+          drawOnChartArea: true,
+          drawTicks: true,
+          borderDash: [5, 5],
+          color: "#c1c4ce5c",
+        },
+        ticks: {
+          callback: function (label) {
+            let realLabel = this.getLabelForValue(label);
+            var slice = realLabel.split(";")[0];
+            return slice;
+          },
+          display: true,
+          color: "#b2b9bf",
+          padding: 20,
+          font: {
+            size: 11,
+            family: typography.fontFamily,
+            style: "normal",
+            lineHeight: 2,
+          },
+        },
+      },
+      x1: {
+        type: "category", // specify category type for combined labels
+        position: "bottom", // position it on the bottom as well
+        grid: {
+          drawOnChartArea: false,
+        },
+        offset: true, // Ensures x1 (time) axis does not overlap with x (slice) axis
+        ticks: {
+          callback: function (label) {
+            let realLabel = this.getLabelForValue(label);
+            var time = realLabel.split(";")[1];
+            return time;
+          },
+          display: true,
+          color: "#b2b9bf",
+          padding: 20,
+          font: {
+            size: 11,
+            family: typography.fontFamily,
+            style: "normal",
+            lineHeight: 2,
+          },
+        },
+      },
+    },
+  };
+
+  // Merge custom options with default options
+  const mergedOptions = { ...defaultOptions, ...customOptions };
+
+  // Return the final configuration object
   return {
     data: {
       labels,
       datasets: [...datasets],
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false,
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: "index",
-      },
-      scales: {
-        y: {
-          grid: {
-            drawBorder: false,
-            display: true,
-            drawOnChartArea: true,
-            drawTicks: false,
-            borderDash: [5, 5],
-            color: "#c1c4ce5c",
-          },
-          ticks: {
-            display: true,
-            padding: 10,
-            color: "#b2b9bf",
-            font: {
-              size: 11,
-              family: typography.fontFamily,
-              style: "normal",
-              lineHeight: 2,
-            },
-          },
-        },
-        x: {
-          grid: {
-            drawBorder: false,
-            display: true,
-            drawOnChartArea: true,
-            drawTicks: true,
-            borderDash: [5, 5],
-            color: "#c1c4ce5c",
-          },
-          ticks: {
-            display: true,
-            color: "#b2b9bf",
-            padding: 20,
-            font: {
-              size: 11,
-              family: typography.fontFamily,
-              style: "normal",
-              lineHeight: 2,
-            },
-          },
-        },
-      },
-    },
+    options: mergedOptions,
   };
 }
 

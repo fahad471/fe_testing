@@ -11,6 +11,7 @@ COPY package.json ./
 
 RUN npm install -upgrade
 
+RUN npm install chartjs-adapter-date-fns
 
 RUN npm install node-fetch
 

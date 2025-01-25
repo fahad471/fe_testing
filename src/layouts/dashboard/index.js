@@ -52,91 +52,73 @@ function Dashboard() {
     return () => clearInterval(intervalId);
   }, [liveCheck]);
 
-  // // Fetch data based on production ID
-  // const fetchData = (field, setter) => {
-  //   const API_URL =
-  //     "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor" +
-  //     route_influx +
-  //     "?production_id=" +
-  //     productionIds +
-  //     "&field=" +
-  //     field;
-
-  //   axios
-  //     .get(API_URL)
-  //     .then((response) => {
-  //       const timeLabels = response.data.map((item) =>
-  //         route_influx === "_slice" ? item._slice : item._time
-  //       );
-  //       const values = response.data.map((item) => item._value);
-
-  //       setter({
-  //         labels: timeLabels,
-  //         datasets: [
-  //           {
-  //             label: field,
-  //             color: "success", // Default color, adjust dynamically if needed
-  //             data: values,
-  //           },
-  //         ],
-  //       });
-  //       const jobDate =
-  //         response.data.length > 0 ? new Date(response.data[0]._time).toLocaleString() : "No data";
-  //       setJobDate(jobDate); //
-  //       setLastUpdateTime(new Date().toLocaleString());
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error fetching data:", error);
-  //     });
-  // };
-
-  // Fetch data for slice and time (separately) for each sensor
+  // Fetch data based on production ID
   const fetchData = (field, setter) => {
+    // const API_URL =
+    //   "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor" +
+    //   route_influx +
+    //   "?production_id=" +
+    //   productionIds +
+    //   "&field=" +
+    //   field;
+
     const sliceAPI_URL = `http://localhost:8000/api/sensor_data/influx/Opt_sensor_slice?production_id=${productionIds}&field=${field}`;
     const timeAPI_URL = `http://localhost:8000/api/sensor_data/influx/Opt_sensor_time?production_id=${productionIds}&field=${field}`;
 
-    // Fetch both slice and time data concurrently
     Promise.all([axios.get(sliceAPI_URL), axios.get(timeAPI_URL)])
       .then((responses) => {
         const sliceData = responses[0].data;
         const timeData = responses[1].data;
-        console.log("Slice Data:", sliceData);
-        console.log("Time Data:", timeData);
 
+        // Ensure both datasets are valid (i.e., they have matching lengths)
         if (sliceData.length && timeData.length) {
-          // Combine the slice and time data for x-axis labels
-          const combinedLabels = sliceData.map((item, index) => {
-            const slice = item._slice;
-
-            const time = timeData[index]?._time || "";
-            const date = new Date(time);
-            const stime = date.toTimeString().slice(0, 5);
-            return `Slice ${slice} - ${stime}`;
-          });
-
-          // Update chart data and x-axis information
           setter({
-            labels: combinedLabels, // Use combinedLabels for x-axis labels
             datasets: [
               {
-                label: `${field} - Slice Data`,
-                borderColor: "green", // You can adjust the color dynamically if needed
-                data: sliceData.map((item) => item._value), // Data from sliceData
+                label: `${field}`,
+                color: "success",
+                data: sliceData.map((item) => item._value),
               },
             ],
+            labels: sliceData.map((item, index) => {
+              // Combine _slice and _time into one label: _slice[index];_time[index]
+              const time = new Date(timeData[index]._time);
+              const formattedTime =
+                time.getHours() + ":" + (time.getMinutes() < 10 ? "0" : "") + time.getMinutes(); // Format time as HH:mm
+              return `${item._slice};${formattedTime}`; // Concatenate slice and formatted time
+            }),
           });
-
-          // Extract the first job date from timeData
           const jobDate =
             timeData.length > 0 ? new Date(timeData[0]._time).toLocaleString() : "No data";
           setJobDate(jobDate);
-
-          // Set the last update time
           setLastUpdateTime(new Date().toLocaleString());
-        } else {
-          console.log("Data is missing or empty");
         }
       })
+
+      // axios
+      //   .get(API_URL)
+      //   .then((response) => {
+      //     const timeLabels = response.data.map((item) =>
+      //       route_influx === "_slice" ? item._slice : item._time
+      //     );
+      //     const values = response.data.map((item) => item._value);
+
+      //     setter({
+      //       labels: timeLabels,
+      //       datasets: [
+      //         {
+      //           label: field,
+      //           color: "success", // Default color, adjust dynamically if needed
+      //           data: values,
+      //         },
+      //       ],
+      //     });
+      //     const jobDate =
+      //       response.data.length > 0 ? new Date(response.data[0]._time).toLocaleString() : "No data";
+      //     setJobDate(jobDate); //
+      //     setLastUpdateTime(new Date().toLocaleString());
+      //   })
+
       .catch((error) => {
         console.error("Error fetching data:", error);
       });
@@ -181,61 +163,6 @@ function Dashboard() {
   const handleLiveToggle = () => {
     setLiveCheck((prevState) => !prevState);
   };
-
-  // Chart Configuration
-  // const chartOptions = {
-  //   responsive: true,
-  //   scales: {
-  //     x: {
-  //       type: "category",
-  //       position: "bottom",
-  //       labels: sensorChartData?._time || [], // Use time labels for bottom x-axis
-  //       title: {
-  //         display: true,
-  //         text: "Time", // Correct title for the x-axis
-  //       },
-  //       ticks: {
-  //         rotation: 45,
-  //         autoSkip: false,
-  //         maxRotation: 90,
-  //         callback: function (value, index, values) {
-  //           const labelCount = sensorChartData?._time.length || 0; // Use time data for label count
-  //           const step = Math.floor(labelCount * 0.9); // 20% of the total number of labels
-
-  //           // Only show labels at intervals determined by step
-  //           return index % step === 0 ? value : "";
-  //         },
-  //       },
-  //       grid: {
-  //         display: true, // Enable grid for bottom x-axis
-  //       },
-  //     },
-  //     x1: {
-  //       type: "category",
-  //       position: "top",
-  //       labels: sensorChartData?._slice || [], // Use slice labels for top x-axis
-  //       title: {
-  //         display: true,
-  //         text: "Slice", // Correct title for the top x-axis
-  //       },
-  //       ticks: {
-  //         rotation: 45,
-  //         autoSkip: false,
-  //         maxRotation: 90,
-  //         callback: function (value, index, values) {
-  //           const labelCount = sensorChartData?._slice.length || 0; // Use slice data for label count
-  //           const step = Math.floor(labelCount * 0.05); // 20% of the total number of labels
-
-  //           // Only show labels at intervals determined by step
-  //           return index % step === 0 ? value : "";
-  //         },
-  //       },
-  //       grid: {
-  //         display: false, // Disable grid for top x-axis
-  //       },
-  //     },
-  //   },
-  // };
 
   return (
     <DashboardLayout>
@@ -283,7 +210,7 @@ function Dashboard() {
                       />
                       <Button
                         variant="contained"
-                        color="white"
+                        color="primary"
                         onClick={handleFetchData}
                         style={{ marginTop: "0px" }}
                         disabled={liveCheck}
@@ -303,7 +230,7 @@ function Dashboard() {
                     )}
 
                     {/* <div style={{ marginLeft: "0px", marginTop: "40%" }}>
-                      {/*Add Switch to toggle between "Opt_sensor_slice" and "Opt_sensor_time"} 
+                      Add Switch to toggle between "Opt_sensor_slice" and "Opt_sensor_time"
                       <label>
                         <input
                           type="checkbox"
