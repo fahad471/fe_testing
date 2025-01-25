@@ -16,7 +16,10 @@ Coded by www.creative-tim.com
 import typography from "assets/theme/base/typography";
 
 function configs(labels, datasets, customOptions) {
-  // Default options definition moved here
+  const dataLength = labels.length;
+  const sliceTickInterval = Math.floor(0.05 * dataLength); // For Slice axis
+  const timeTickInterval = Math.floor(0.1 * dataLength);
+  // Default options definition
   const defaultOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -61,6 +64,9 @@ function configs(labels, datasets, customOptions) {
           color: "#c1c4ce5c",
         },
         ticks: {
+          autoSkip: true,
+          maxTicksLimit: dataLength / sliceTickInterval, //
+          stepSize: sliceTickInterval, //
           callback: function (label) {
             let realLabel = this.getLabelForValue(label);
             var slice = realLabel.split(";")[0];
@@ -85,6 +91,9 @@ function configs(labels, datasets, customOptions) {
         },
         offset: true, // Ensures x1 (time) axis does not overlap with x (slice) axis
         ticks: {
+          autoSkip: true,
+          maxTicksLimit: dataLength / timeTickInterval, //
+          stepSize: timeTickInterval, //
           callback: function (label) {
             let realLabel = this.getLabelForValue(label);
             var time = realLabel.split(";")[1];

@@ -164,6 +164,31 @@ function Dashboard() {
     setLiveCheck((prevState) => !prevState);
   };
 
+  // Fetch data on live data stream every 1 minute
+  useEffect(() => {
+    let intervalId;
+    if (liveCheck) {
+      // Fetch data every minute (60000 ms)
+      intervalId = setInterval(() => {
+        if (productionIds && productionIds.length > 0) {
+          fetchData("ProcessChamberOxygenConcentration", setSensorChartData);
+          fetchData("ShieldingGasConsumption", setSensorChamberGas);
+          fetchData("EnvironmentHumidity", setSensorEnvironmentHumidity);
+          fetchData("RecoaterStatus", setSensorRecoaterStatus);
+          fetchData("SliceUsedPowderVolume", setSensorSliceUsedPowderVolume);
+          fetchData("SliceCoatingDuration", setSensorSliceCoatingDuration);
+        }
+      }, 60000);
+    }
+
+    // Clear interval when live data is disabled
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [liveCheck, productionIds]);
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -210,7 +235,7 @@ function Dashboard() {
                       />
                       <Button
                         variant="contained"
-                        color="primary"
+                        color="success"
                         onClick={handleFetchData}
                         style={{ marginTop: "0px" }}
                         disabled={liveCheck}
