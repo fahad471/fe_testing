@@ -56,8 +56,8 @@ function Basic() {
     e.preventDefault();
 
     // Hardcoded credentials
-    const hardcodedUser = "FW@THRO";
-    const hardcodedPassword = "1234";
+    const hardcodedUser = "ai@green";
+    const hardcodedPassword = "dashboard";
 
     // Simple validation
     if (email === hardcodedUser && password === hardcodedPassword) {

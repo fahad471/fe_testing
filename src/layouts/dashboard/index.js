@@ -24,36 +24,50 @@ function Dashboard() {
   const [liveCheck, setLiveCheck] = useState(true); // Live data toggle, default to true
   const [jobDate, setJobDate] = useState(null); // job date, default to null
 
+  // const [localhost] = useState("141.60.177.220");
+  const [apiBaseUrl, setApiBaseUrl] = useState("");
+
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const baseUrl = hostname === "localhost" ? "localhost" : "141.60.177.220"; // External IP
+    setApiBaseUrl(baseUrl);
+  }, []);
+
   // Fetch the latest production ID on mount
   useEffect(() => {
-    const production_id_url = "http://localhost:8000/api/sensor_data/influx/latest_status";
+    if (apiBaseUrl) {
+      const production_id_url = `http://${apiBaseUrl}:8000/api/sensor_data/influx/latest_status`;
 
-    const fetchProductionId = () => {
-      if (liveCheck) {
-        axios
-          .get(production_id_url)
-          .then((response) => {
-            const latestProductionId = response.data.ProductionID;
-            setProductionId(latestProductionId); // Set the default to the latest production ID
-            setInputProductionId(latestProductionId); // Set the input field to the latest ID
-          })
-          .catch((error) => {
-            console.error("Error fetching production ID:", error);
-          });
-      }
-    };
+      const fetchProductionId = () => {
+        if (liveCheck) {
+          axios
+            .get(production_id_url)
+            .then((response) => {
+              const latestProductionId = response.data.ProductionID;
+              setProductionId(latestProductionId); // Set the default to the latest production ID
+              setInputProductionId(latestProductionId); // Set the input field to the latest ID
+            })
+            .catch((error) => {
+              console.error("Error fetching production ID:", error);
+            });
+        }
+      };
 
-    fetchProductionId();
+      fetchProductionId();
 
-    // Set interval to fetch every 2 minutes (120000 ms)
-    const intervalId = setInterval(fetchProductionId, 120000);
+      // Set interval to fetch every 2 minutes (120000 ms)
+      const intervalId = setInterval(fetchProductionId, 120000);
 
-    // Clear interval on unmount
-    return () => clearInterval(intervalId);
-  }, [liveCheck]);
+      // Clear interval on unmount
+      return () => clearInterval(intervalId);
+    }
+  }, [apiBaseUrl, liveCheck]);
 
   // Fetch data based on production ID
   const fetchData = (field, setter) => {
+    if (!apiBaseUrl) {
+      return; // If apiBaseUrl is not set, do nothing
+    }
     // const API_URL =
     //   "http://127.0.0.1:8000/api/sensor_data/influx/Opt_sensor" +
     //   route_influx +
@@ -62,8 +76,8 @@ function Dashboard() {
     //   "&field=" +
     //   field;
 
-    const sliceAPI_URL = `http://localhost:8000/api/sensor_data/influx/Opt_sensor_slice?production_id=${productionIds}&field=${field}`;
-    const timeAPI_URL = `http://localhost:8000/api/sensor_data/influx/Opt_sensor_time?production_id=${productionIds}&field=${field}`;
+    const sliceAPI_URL = `http://${apiBaseUrl}:8000/api/sensor_data/influx/Opt_sensor_slice?production_id=${productionIds}&field=${field}`;
+    const timeAPI_URL = `http://${apiBaseUrl}:8000/api/sensor_data/influx/Opt_sensor_time?production_id=${productionIds}&field=${field}`;
 
     Promise.all([axios.get(sliceAPI_URL), axios.get(timeAPI_URL)])
       .then((responses) => {
@@ -149,7 +163,7 @@ function Dashboard() {
 
   // Fetch data whenever the production ID changes
   useEffect(() => {
-    if (productionIds && productionIds.length > 0) {
+    if (apiBaseUrl && productionIds && productionIds.length > 0) {
       fetchData("ProcessChamberOxygenConcentration", setSensorChartData);
       fetchData("ShieldingGasConsumption", setSensorChamberGas);
       fetchData("EnvironmentHumidity", setSensorEnvironmentHumidity);
@@ -157,7 +171,7 @@ function Dashboard() {
       fetchData("SliceUsedPowderVolume", setSensorSliceUsedPowderVolume);
       fetchData("SliceCoatingDuration", setSensorSliceCoatingDuration);
     }
-  }, [productionIds]); // Runs whenever productionIds changes
+  }, [apiBaseUrl, productionIds]); // Runs whenever productionIds changes
 
   // Toggle Live Data stream checkbox
   const handleLiveToggle = () => {
@@ -170,7 +184,7 @@ function Dashboard() {
     if (liveCheck) {
       // Fetch data every minute (60000 ms)
       intervalId = setInterval(() => {
-        if (productionIds && productionIds.length > 0) {
+        if (apiBaseUrl && productionIds && productionIds.length > 0) {
           fetchData("ProcessChamberOxygenConcentration", setSensorChartData);
           fetchData("ShieldingGasConsumption", setSensorChamberGas);
           fetchData("EnvironmentHumidity", setSensorEnvironmentHumidity);
@@ -187,7 +201,7 @@ function Dashboard() {
         clearInterval(intervalId);
       }
     };
-  }, [liveCheck, productionIds]);
+  }, [liveCheck, apiBaseUrl, productionIds]);
 
   return (
     <DashboardLayout>
@@ -268,14 +282,14 @@ function Dashboard() {
                   </Grid>
 
                   {/* Right side: Indoor Camera */}
-                  <Grid item xs={12} md={4} textAlign="right">
+                  <Grid item xs={8} md={8} lg={6}>
                     <MDBox mb={8}>
-                      <h3>Indoor Camera</h3>
+                      <h3 style={{ textAlign: "center" }}>Indoor Camera</h3>
                       <img
                         src="http://141.60.140.120:23600/S0711Q0247/camera.mjpg"
                         alt="Camera Stream"
                         style={{
-                          width: "150%",
+                          width: "100%",
                           height: "auto",
                           maxWidth: "1000px",
                           maxHeight: "aut0",

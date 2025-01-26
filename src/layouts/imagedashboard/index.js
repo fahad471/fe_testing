@@ -20,12 +20,14 @@ const Dashboard = () => {
   const [inputSliceNumber, setInputSliceNumber] = useState(sliceNumber); // Temporary state for slice number input
   const [productionId, setProductionId] = useState("31daea9f-7091-45fb-97f5-99354e3f7da1"); // Default production ID
 
+  const [localhost] = useState("141.60.177.220");
+
   // Function to fetch image data based on the slice number and production ID
   const fetchImageData = async (productionId, sliceNumber) => {
     setLoading(true); // Show the loading state
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
+        `http://${localhost}:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
       );
       setImagesData(response.data); // Update the images data with the new images fetched from the backend
       setError(null); // Reset the error state if the fetch was successful
@@ -41,7 +43,7 @@ const Dashboard = () => {
   const fetchDefectData = async (inputSliceNumber) => {
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/image_data/detect_defects/", // API endpoint for defect detection
+        `http://${localhost}:8000/api/image_data/detect_defects/`, // API endpoint for defect detection
         null, // No body required
         {
           params: {
@@ -53,7 +55,7 @@ const Dashboard = () => {
 
       // Map defect data to the imagesData array
       const updatedImages = imagesData.map((image) => {
-        const normalizedImagePath = `http://localhost:8000/${image.image}`;
+        const normalizedImagePath = `http://${localhost}:8000/${image.image}`;
         const imageFileName = normalizedImagePath.split("/").pop();
         const defectData = response.data.find((defect) => {
           const defectFileName = defect.image_path.split("\\").pop();
@@ -74,8 +76,8 @@ const Dashboard = () => {
     setAmiquamLoading(true); // Show the loading state
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/parameter_data/mongo/inspection-data-legacy?production_id=${productionId}&slice_number=${sliceNumber}`
-        // `http://localhost:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
+        `http://${localhost}:8000/api/parameter_data/mongo/inspection-data-legacy?production_id=${productionId}&slice_number=${sliceNumber}`
+        // `http://${localhost}:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
       );
       console.log("Amiquam Data:", response.data);
       setAmiquamData(response.data); // Update the amiquam data with the new images fetched from the backend
@@ -105,9 +107,9 @@ const Dashboard = () => {
 
     setDetectDefects(false);
     // Trigger defect detection if checkbox is checked
-    if (detectDefects) {
-      await fetchDefectData(inputSliceNumber); // Fetch defect data based on inputSliceNumber
-    }
+    // if (detectDefects) {
+    //   await fetchDefectData(inputSliceNumber); // Fetch defect data based on inputSliceNumber
+    // }
   };
 
   // Handle the defect detection checkbox change
@@ -262,16 +264,16 @@ const Dashboard = () => {
           {/* Image Gallery */}
           <div
             className="image-gallery"
-            style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "20px" }}
+            style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}
           >
             {imagesData.map((image) => (
               <div className="Image Position" style={{ textAlign: "center" }} key={image.id}>
                 <h3>{image.position}</h3>
                 <div className="image-item" style={{ textAlign: "center", position: "relative" }}>
                   <img
-                    src={`http://localhost:8000/${image.image}`} // Corrected image URL
+                    src={`http://${localhost}:8000/${image.image}`} // Corrected image URL
                     alt={`Position: ${image.position}`} // Corrected alt text
-                    style={{ width: "100%", height: "auto", cursor: "pointer" }}
+                    style={{ width: "600px", height: "auto", cursor: "pointer" }}
                     onClick={() => openImageModal(image)}
                     onLoad={(e) => handleImageLoad(image.id, e)} // Pass the event and image ID
                   />
@@ -312,13 +314,13 @@ const Dashboard = () => {
 
                         const boxLeft = centerX * scaleX;
                         const boxTop = centerY * scaleY;
-                        const boxWidth = width * scaleX * 1.1;
-                        const boxHeight = height * scaleY * 1.1;
+                        const boxWidth = width * scaleX * 0.8;
+                        const boxHeight = height * scaleY * 0.8;
 
                         const new_boxleft =
-                          ((boxLeft - boxWidth / 1.5) / imageDimension.width) * 100;
+                          ((boxLeft - boxWidth / 1.0) / imageDimension.width) * 600;
                         const new_boxtop =
-                          ((boxTop - boxHeight / 1.5) / imageDimension.height) * 100;
+                          ((boxTop - boxHeight / 1.0) / imageDimension.height) * 600;
 
                         // Mapping numeric label IDs to descriptive defect names
                         const defectLabels = {
@@ -335,8 +337,8 @@ const Dashboard = () => {
                             key={idx}
                             style={{
                               position: "absolute",
-                              left: `${new_boxleft}%`,
-                              top: `${new_boxtop}%`,
+                              left: `${new_boxleft}px`,
+                              top: `${new_boxtop}px`,
                               width: `${boxWidth}px`,
                               height: `${boxHeight}px`,
                               border: "2px solid red",
@@ -398,12 +400,12 @@ const Dashboard = () => {
         )} */}
 
           {/* Display Amiquam Data Graph if Needed */}
-          <div style={{ flex: 1, width: "30%" }}>
+          <div style={{ flex: 1, height: "600px", width: "500px" }}>
             {amiquamData.length > 0 && (
-              <div>
-                <h4>Object 0 Liftoff</h4>
+              <div style={{ flex: 1, height: "600px", width: "500px" }}>
+                <h4 style={{ textAlign: "center", paddingTop: "30px" }}>Object 0 Liftoff</h4>
                 <Line data={getChartData(amiquamData, "0")} />
-                <h4>Object 1 Liftoff</h4>
+                <h4 style={{ textAlign: "center", paddingTop: "30px" }}>Object 1 Liftoff</h4>
                 <Line data={getChartData(amiquamData, "1")} />
               </div>
             )}
@@ -438,7 +440,7 @@ const Dashboard = () => {
               <CloseIcon />
             </IconButton>
             <img
-              src={`http://localhost:8000/${selectedImage?.image}`} // Corrected image URL
+              src={`http://${localhost}:8000/${selectedImage?.image}`} // Corrected image URL
               alt={`Position: ${selectedImage?.position}`} // Corrected alt text
               style={{ width: "100%", height: "auto" }}
             />
