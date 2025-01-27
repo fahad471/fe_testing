@@ -20,73 +20,86 @@ const Dashboard = () => {
   const [inputSliceNumber, setInputSliceNumber] = useState(sliceNumber); // Temporary state for slice number input
   const [productionId, setProductionId] = useState("31daea9f-7091-45fb-97f5-99354e3f7da1"); // Default production ID
 
-  const [localhost] = useState("141.60.177.220");
+  // const [localhost] = useState("141.60.181.147"); // VPN:141.60.177.220
+  const [apiBaseUrl, setApiBaseUrl] = useState("");
+
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const baseUrl = hostname === "localhost" ? "localhost" : "141.60.181.147"; // External IP
+    setApiBaseUrl(baseUrl);
+  }, []);
 
   // Function to fetch image data based on the slice number and production ID
   const fetchImageData = async (productionId, sliceNumber) => {
     setLoading(true); // Show the loading state
-    try {
-      const response = await axios.get(
-        `http://${localhost}:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
-      );
-      setImagesData(response.data); // Update the images data with the new images fetched from the backend
-      setError(null); // Reset the error state if the fetch was successful
-    } catch (err) {
-      setError("Error fetching image data");
-      console.error(err);
-    } finally {
-      setLoading(false); // Hide loading state after the request completes
+    if (apiBaseUrl) {
+      try {
+        const response = await axios.get(
+          `http://${apiBaseUrl}:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
+        );
+        setImagesData(response.data); // Update the images data with the new images fetched from the backend
+        setError(null); // Reset the error state if the fetch was successful
+      } catch (err) {
+        setError("Error fetching image data");
+        console.error(err);
+      } finally {
+        setLoading(false); // Hide loading state after the request completes
+      }
     }
   };
 
   // Function to handle the defect detection logic (can be enhanced)
   const fetchDefectData = async (inputSliceNumber) => {
-    try {
-      const response = await axios.post(
-        `http://${localhost}:8000/api/image_data/detect_defects/`, // API endpoint for defect detection
-        null, // No body required
-        {
-          params: {
-            detect_defects: true, // Set detect_defects to true
-            slice_number: inputSliceNumber, // Set slice_number to inputSliceNumber
-          },
-        }
-      );
+    if (apiBaseUrl) {
+      try {
+        const response = await axios.post(
+          `http://${apiBaseUrl}:8000/api/image_data/detect_defects/`, // API endpoint for defect detection
+          null, // No body required
+          {
+            params: {
+              detect_defects: true, // Set detect_defects to true
+              slice_number: inputSliceNumber, // Set slice_number to inputSliceNumber
+            },
+          }
+        );
 
-      // Map defect data to the imagesData array
-      const updatedImages = imagesData.map((image) => {
-        const normalizedImagePath = `http://${localhost}:8000/${image.image}`;
-        const imageFileName = normalizedImagePath.split("/").pop();
-        const defectData = response.data.find((defect) => {
-          const defectFileName = defect.image_path.split("\\").pop();
-          return defectFileName === imageFileName;
+        // Map defect data to the imagesData array
+        const updatedImages = imagesData.map((image) => {
+          const normalizedImagePath = `http://${apiBaseUrl}:8000/${image.image}`;
+          const imageFileName = normalizedImagePath.split("/").pop();
+          const defectData = response.data.find((defect) => {
+            const defectFileName = defect.image_path.split("\\").pop();
+            return defectFileName === imageFileName;
+          });
+
+          return { ...image, detections: defectData ? defectData.detections : [] };
         });
 
-        return { ...image, detections: defectData ? defectData.detections : [] };
-      });
-
-      setImagesData(updatedImages); // Update images with detection data
-    } catch (err) {
-      console.error("Error fetching defect data:", err);
+        setImagesData(updatedImages); // Update images with detection data
+      } catch (err) {
+        console.error("Error fetching defect data:", err);
+      }
     }
   };
 
   // Function to fetch amiquam data based on slice number and production ID
   const fetchAmiquamData = async (productionId, sliceNumber) => {
     setAmiquamLoading(true); // Show the loading state
-    try {
-      const response = await axios.get(
-        `http://${localhost}:8000/api/parameter_data/mongo/inspection-data-legacy?production_id=${productionId}&slice_number=${sliceNumber}`
-        // `http://${localhost}:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
-      );
-      console.log("Amiquam Data:", response.data);
-      setAmiquamData(response.data); // Update the amiquam data with the new images fetched from the backend
-      setError(null); // Reset the error state if the fetch was successful
-    } catch (err) {
-      setError("Error fetching amiquam data");
-      console.error(err);
-    } finally {
-      setAmiquamLoading(false); // Hide loading state after the request completes
+    if (apiBaseUrl) {
+      try {
+        const response = await axios.get(
+          `http://${apiBaseUrl}:8000/api/parameter_data/mongo/inspection-data-legacy?production_id=${productionId}&slice_number=${sliceNumber}`
+          // `http://${apiBaseUrl}:8000/api/image_data/maria/images/?production_id=${productionId}&slice_number=${sliceNumber}`
+        );
+        console.log("Amiquam Data:", response.data);
+        setAmiquamData(response.data); // Update the amiquam data with the new images fetched from the backend
+        setError(null); // Reset the error state if the fetch was successful
+      } catch (err) {
+        setError("Error fetching amiquam data");
+        console.error(err);
+      } finally {
+        setAmiquamLoading(false); // Hide loading state after the request completes
+      }
     }
   };
 
@@ -102,14 +115,16 @@ const Dashboard = () => {
 
   // Button click to fetch images based on input slice number and production ID
   const handleFetchData = async () => {
-    await fetchImageData(productionId, inputSliceNumber); // Fetch images based on the current input values
-    await fetchAmiquamData(productionId, inputSliceNumber);
+    if (apiBaseUrl) {
+      await fetchImageData(productionId, inputSliceNumber); // Fetch images based on the current input values
+      await fetchAmiquamData(productionId, inputSliceNumber);
 
-    setDetectDefects(false);
-    // Trigger defect detection if checkbox is checked
-    // if (detectDefects) {
-    //   await fetchDefectData(inputSliceNumber); // Fetch defect data based on inputSliceNumber
-    // }
+      setDetectDefects(false);
+      // Trigger defect detection if checkbox is checked
+      // if (detectDefects) {
+      //   await fetchDefectData(inputSliceNumber); // Fetch defect data based on inputSliceNumber
+      // }
+    }
   };
 
   // Handle the defect detection checkbox change
@@ -186,14 +201,16 @@ const Dashboard = () => {
   // Fetch data on initial load (page refresh)
   useEffect(() => {
     // Fetch data using default values on first load
-    fetchImageData(productionId, sliceNumber);
-    fetchAmiquamData(productionId, sliceNumber);
+    if (apiBaseUrl) {
+      fetchImageData(productionId, sliceNumber);
+      fetchAmiquamData(productionId, sliceNumber);
 
-    // If defect detection is enabled, also fetch defect data
-    if (detectDefects) {
-      fetchDefectData(sliceNumber);
+      // If defect detection is enabled, also fetch defect data
+      // if (detectDefects) {
+      //   fetchDefectData(sliceNumber);
+      // }
     }
-  }, []); // Empty dependency array ensures this runs only once on page load
+  }, [apiBaseUrl, productionId, sliceNumber]); // Empty dependency array ensures this runs only once on page load
 
   if (loading) {
     return (
@@ -271,7 +288,7 @@ const Dashboard = () => {
                 <h3>{image.position}</h3>
                 <div className="image-item" style={{ textAlign: "center", position: "relative" }}>
                   <img
-                    src={`http://${localhost}:8000/${image.image}`} // Corrected image URL
+                    src={`http://${apiBaseUrl}:8000/${image.image}`} // Corrected image URL
                     alt={`Position: ${image.position}`} // Corrected alt text
                     style={{ width: "600px", height: "auto", cursor: "pointer" }}
                     onClick={() => openImageModal(image)}
@@ -440,7 +457,7 @@ const Dashboard = () => {
               <CloseIcon />
             </IconButton>
             <img
-              src={`http://${localhost}:8000/${selectedImage?.image}`} // Corrected image URL
+              src={`http://${apiBaseUrl}:8000/${selectedImage?.image}`} // Corrected image URL
               alt={`Position: ${selectedImage?.position}`} // Corrected alt text
               style={{ width: "100%", height: "auto" }}
             />

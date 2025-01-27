@@ -24,12 +24,12 @@ function Dashboard() {
   const [liveCheck, setLiveCheck] = useState(true); // Live data toggle, default to true
   const [jobDate, setJobDate] = useState(null); // job date, default to null
 
-  // const [localhost] = useState("141.60.177.220");
+  // const [localhost] = useState("141.60.177.220"); //VPN:141.60.177.220
   const [apiBaseUrl, setApiBaseUrl] = useState("");
 
   useEffect(() => {
     const hostname = window.location.hostname;
-    const baseUrl = hostname === "localhost" ? "localhost" : "141.60.177.220"; // External IP
+    const baseUrl = hostname === "localhost" ? "localhost" : "141.60.181.147"; // External IP
     setApiBaseUrl(baseUrl);
   }, []);
 
