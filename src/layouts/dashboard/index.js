@@ -268,8 +268,11 @@ function Dashboard() {
                           style={{
                             marginBottom: "30px",
                             marginRight: "20px",
-                            width: "300px",
+                            width: "300px", // Set width for the input field
                             fontSize: "16px",
+                            whiteSpace: "nowrap", // Prevent wrapping
+                            // overflow: "hidden", // Hide overflow
+                            textOverflow: "ellipsis", // Show ellipsis if the text overflows
                           }}
                           disabled={liveCheck}
                         />
@@ -285,10 +288,24 @@ function Dashboard() {
                           style={{
                             marginBottom: "30px",
                             marginRight: "20px",
-                            minWidth: "300px",
-                            minHeight: "40 px",
-                            width: "auto", // Allow the width to grow based on content
+                            width: "300px", // Allow the width to grow based on content
                             fontSize: "16px",
+                            height: "40px", // Ensure consistent height
+                            // padding: "10px", // Ensure padding for the dropdown field
+                            whiteSpace: "nowrap", // Prevent wrapping
+                            // overflow: "hidden", // Hide overflow
+                            textOverflow: "ellipsis", // Show ellipsis if the text overflows
+                          }}
+                          InputProps={{
+                            style: {
+                              marginBottom: "30px",
+                              marginRight: "20px",
+                              width: "300px",
+                              height: "40px",
+                              // padding: "10px", // Ensure padding for the dropdown field
+                              whiteSpace: "nowrap", // Prevent wrapping
+                              textOverflow: "ellipsis", // Show ellipsis if the text overflows
+                            },
                           }}
                         >
                           <MenuItem value="">Select Production ID</MenuItem>{" "}
