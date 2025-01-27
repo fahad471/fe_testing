@@ -3,6 +3,7 @@ import axios from "axios";
 import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField"; // Import Material UI TextField
 import Button from "@mui/material/Button"; // Import Material UI Button
+import MenuItem from "@mui/material/MenuItem"; // Import MenuItem from Material UI
 
 import MDBox from "components/MDBox";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -18,11 +19,12 @@ function Dashboard() {
   const [sensorSliceUsedPowderVolume, setSensorSliceUsedPowderVolume] = useState(null);
   const [sensorSliceCoatingDuration, setSensorSliceCoatingDuration] = useState(null);
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
-  const [route_influx, setRouteInflux] = useState("_slice");
+  //const [route_influx, setRouteInflux] = useState("_slice"); //dont need anymore since slice and time labels are displayed together now
   const [productionIds, setProductionId] = useState(""); // Initially empty production ID
   const [inputProductionId, setInputProductionId] = useState(""); // State to manage input value
   const [liveCheck, setLiveCheck] = useState(true); // Live data toggle, default to true
   const [jobDate, setJobDate] = useState(null); // job date, default to null
+  const [productionIdList, setProductionIdList] = useState([]); // State to store production IDs list
 
   // const [localhost] = useState("141.60.177.220"); //VPN:141.60.177.220
   const [apiBaseUrl, setApiBaseUrl] = useState("");
@@ -178,6 +180,28 @@ function Dashboard() {
     setLiveCheck((prevState) => !prevState);
   };
 
+  //Function that will fetch the production IDs from backend InfluxDB
+  const fetchProductionIdList = () => {
+    if (apiBaseUrl) {
+      axios
+        .get(`http://${apiBaseUrl}:8000/api/sensor_data/influx/productionid`)
+        .then((response) => {
+          const productionIds = response.data.map((item) => item.ProductionID);
+          setProductionIdList(productionIds); // Store production IDs in the state
+        })
+        .catch((error) => {
+          console.error("Error fetching production IDs:", error);
+        });
+    }
+  };
+
+  // Fetch production IDs when Live Data Stream is unchecked
+  useEffect(() => {
+    if (apiBaseUrl) {
+      fetchProductionIdList();
+    }
+  }, [apiBaseUrl]);
+
   // Fetch data on live data stream every 1 minute
   useEffect(() => {
     let intervalId;
@@ -234,7 +258,78 @@ function Dashboard() {
                         </label>
                       </div>
 
-                      <TextField
+                      {liveCheck ? (
+                        // Display input field when Live Data is ON
+                        <TextField
+                          label="Current Production ID"
+                          variant="outlined"
+                          value={inputProductionId} // Bind to state
+                          onChange={handleInputChange} // Handle input changes
+                          style={{
+                            marginBottom: "30px",
+                            marginRight: "20px",
+                            width: "300px",
+                            fontSize: "16px",
+                          }}
+                          disabled={liveCheck}
+                        />
+                      ) : (
+                        // Display dropdown when Live Data is OFF
+                        <TextField
+                          select
+                          label="Select Production ID"
+                          value={inputProductionId} // Bind to the inputProductionId state
+                          onChange={handleInputChange} // Handle change event
+                          variant="outlined"
+                          // fullWidth
+                          style={{
+                            marginBottom: "30px",
+                            marginRight: "20px",
+                            minWidth: "300px",
+                            minHeight: "40 px",
+                            width: "auto", // Allow the width to grow based on content
+                            fontSize: "16px",
+                          }}
+                        >
+                          <MenuItem value="">Select Production ID</MenuItem>{" "}
+                          {/* Default empty option */}
+                          {productionIdList.map((prodId) => (
+                            <MenuItem key={prodId} value={prodId}>
+                              {prodId}
+                            </MenuItem> // Use MenuItem for dropdown options
+                          ))}
+                        </TextField>
+                      )}
+
+                      {/* //   <div style={{ marginBottom: "30px" }}>
+                      //     <label htmlFor="productionIdDropdown" style={{ marginRight: "10px" }}>
+                      //       Select Production ID:
+                      //     </label>
+                      //     <select
+                      //       id="productionIdDropdown"
+                      //       value={inputProductionId} // Bind to the inputProductionId state
+                      //       onChange={handleInputChange} // Handle change event
+                      //       style={{
+                      //         minWidth: "200px", // Set minimum width
+                      //         width: "auto", // Allow the width to grow based on content
+                      //         padding: "10px",
+                      //         fontSize: "16px",
+                      //         whiteSpace: "nowrap", // Prevent wrapping
+                      //         overflow: "hidden", // Hide overflow
+                      //         textOverflow: "ellipsis", // Show ellipsis if the text overflows
+                      //       }}
+                      //     >
+                      //       <option value="">Select Production ID</option>
+                      //       {productionIdList.map((prodId) => (
+                      //         <option key={prodId} value={prodId}>
+                      //           {prodId}
+                      //         </option>
+                      //       ))}
+                      //     </select>
+                      //   </div>
+                      // )} */}
+
+                      {/* <TextField
                         label="Enter Production ID"
                         variant="outlined"
                         value={inputProductionId} // Bind to state
@@ -246,7 +341,8 @@ function Dashboard() {
                           fontSize: "16px",
                         }}
                         disabled={liveCheck}
-                      />
+                      /> */}
+
                       <Button
                         variant="contained"
                         color="success"
@@ -291,7 +387,7 @@ function Dashboard() {
                         style={{
                           width: "100%",
                           height: "auto",
-                          maxWidth: "1000px",
+                          // maxWidth: "1000px",
                           maxHeight: "aut0",
                         }} // Adjusted size
                       />
