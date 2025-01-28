@@ -62,8 +62,8 @@ function DefaultLineChart({ icon, title, description, height, chart }) {
     ? chart.datasets.map((dataset) => ({
         ...dataset,
         tension: 0,
-        pointRadius: 3,
-        borderWidth: 4,
+        pointRadius: 1,
+        borderWidth: 2,
         backgroundColor: "transparent",
         fill: true,
         pointBackgroundColor: colors[dataset.color]
@@ -151,6 +151,7 @@ DefaultLineChart.propTypes = {
   description: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   chart: PropTypes.objectOf(PropTypes.array).isRequired,
+  options: PropTypes.object,
 };
 
 export default DefaultLineChart;

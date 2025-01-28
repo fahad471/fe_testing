@@ -8,7 +8,20 @@ WORKDIR /app
 COPY package.json ./
 
 # Install dependencies
-RUN npm install
+
+RUN npm install -upgrade
+
+RUN npm install chartjs-adapter-date-fns
+
+RUN npm install node-fetch
+
+RUN npm install node-polyfill-webpack-plugin
+
+RUN npm install path-browserify stream-browserify url util browserify-zlib
+
+RUN npm install axios
+
+
 
 # Copy the rest of the application code (including your React app)
 COPY . .
